@@ -216,3 +216,17 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ---- Project additions ----
+
+# Node / frontend
+node_modules/
+frontend/dist/
+.vite/
+npm-debug.log*
+
+# Local database
+backend/dev.db
+
+# Reference PDFs -- shared outside the repo (Aivana marks them Proprietary & Confidential)
+ref/*.pdf

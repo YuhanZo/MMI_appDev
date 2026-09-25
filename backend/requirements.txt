@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+sqlalchemy
+python-dotenv
+
+# Uncomment when moving to Postgres:
+# psycopg[binary]
