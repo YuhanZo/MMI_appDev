@@ -230,3 +230,7 @@ backend/dev.db
 
 # Reference PDFs -- shared outside the repo (Aivana marks them Proprietary & Confidential)
 ref/*.pdf
+
+# Test artifacts
+.pytest_cache/
+coverage/

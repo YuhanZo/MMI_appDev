@@ -103,7 +103,13 @@ function MockInterview() {
           <p>
             <b>[{q.type}]</b> {q.question}
           </p>
-          <textarea value={answer} onChange={(e) => setAnswer(e.target.value)} rows={3} />
+          <textarea
+            aria-label="Your answer"
+            placeholder="Type your answer..."
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            rows={3}
+          />
           <button onClick={() => onSubmit(q.id)}>Submit answer</button>
         </div>
       ))}

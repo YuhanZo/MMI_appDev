@@ -4,5 +4,9 @@ pydantic-settings
 sqlalchemy
 python-dotenv
 
+# Tests
+pytest
+httpx
+
 # Uncomment when moving to Postgres:
 # psycopg[binary]

@@ -45,6 +45,31 @@ origin and CORS never comes up in dev.
 | GET | `/api/interview/questions` | `InterviewQuestion[]` (mocked) |
 | POST | `/api/interview/feedback` | `InterviewFeedback` (mocked) |
 
+## Tests
+
+```bash
+cd backend && .venv/bin/pytest          # 12 tests
+cd frontend && npm test                 # 6 tests
+```
+
+Neither suite needs a running server. Backend tests get a fresh throwaway
+SQLite file per test, so `dev.db` is never touched; frontend tests stub
+`fetch`, so no backend is required.
+
+What they cover:
+
+| Area | Checks |
+| --- | --- |
+| Shared format | Every response's field set matches `ref/prototype-data-format-v0.1.md` |
+| Validation | Malformed requests get 422, not a 500 |
+| Persistence | A job search writes a `search_logs` row with the right values |
+| Round trips | search → fit analysis, and question → answer → feedback |
+| Failure paths | Unreachable backend and a failing search both surface to the user |
+
+The shared-format tests are the ones that matter most: they fail the moment
+frontend and backend drift apart, which is the main risk while both are being
+built in parallel.
+
 ## Switching to Postgres
 
 1. `.venv/bin/pip install "psycopg[binary]"`
