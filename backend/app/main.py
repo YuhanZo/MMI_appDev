@@ -1,8 +1,10 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from app import models  # noqa: F401  -- registers tables on Base
 from app.config import settings
@@ -34,6 +36,13 @@ app.include_router(interview.router)
 
 
 @app.get("/api/health")
-def health(request: Request) -> dict[str, str]:
-    dialect = request.app.state.engine.dialect.name
-    return {"status": "ok", "database": dialect}
+def health(request: Request, response: Response) -> dict[str, str]:
+    """Runs a real query, so "ok" means backend *and* database are reachable."""
+    engine = request.app.state.engine
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        response.status_code = 503
+        return {"status": "error", "database": engine.dialect.name}
+    return {"status": "ok", "database": engine.dialect.name}

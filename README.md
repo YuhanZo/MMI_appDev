@@ -63,7 +63,8 @@ Both servers reload on save. Stop each with `Ctrl+C`.
 
 | Symptom | Cause / fix |
 | --- | --- |
-| Page shows `backend unreachable` or `Error: 502 Bad Gateway` | The backend isn't running. Start it in terminal 1, then refresh the page. |
+| Page shows `backend unreachable` or `Error: 502 Bad Gateway` | The backend isn't running (start it in terminal 1, then refresh), or `/api/health` returned 503 because the database is unreachable. |
+| Backend exits with `unable to open database file` / `Application startup failed` | It can't reach `DATABASE_URL` at startup (tables are created then). Check the URL in `backend/.env`. |
 | `npm error enoent Could not read package.json` | `npm run dev` was run in `backend/`. It belongs in `frontend/`. |
 | `uvicorn: command not found` | The venv isn't active. Run `source .venv/bin/activate`, or use `.venv/bin/uvicorn ...`. |
 
@@ -141,7 +142,7 @@ drift apart.
 
 | Method | Path | Returns |
 | --- | --- | --- |
-| GET | `/api/health` | service status + active DB dialect |
+| GET | `/api/health` | runs `SELECT 1`; `200 {status: ok, database: <dialect>}`, or `503` if the database is unreachable |
 | POST | `/api/jobs/search` | `Job[]` (mocked; logs the search to the DB) |
 | POST | `/api/jobs/fit-analysis` | `FitAnalysisResult` (mocked) |
 | GET | `/api/interview/questions` | `InterviewQuestion[]` (mocked) |
@@ -150,7 +151,7 @@ drift apart.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 13 tests
+cd backend && .venv/bin/pytest          # 14 tests
 cd frontend && npm test                 # 7 tests
 ```
 
@@ -167,7 +168,7 @@ stub `fetch`, so no backend is required.
 | Isolation | Startup table creation goes to the test database, not the configured one |
 | Round trips | search → fit analysis, and question → answer → feedback |
 | UI state | Each interview question keeps its own answer |
-| Failure paths | Unreachable backend and a failing search both surface to the user |
+| Failure paths | Unreachable backend and a failing search both surface to the user; health returns 503 when the database is down |
 
 ## Switching to Postgres
 
