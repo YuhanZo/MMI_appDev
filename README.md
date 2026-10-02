@@ -160,7 +160,7 @@ drift apart.
 
 ```bash
 cd backend && .venv/bin/pytest          # 35 tests
-cd frontend && npm test                 # 8 tests
+cd frontend && npm test                 # 10 tests
 ```
 
 Neither suite needs a running server. Backend tests swap `app.state.engine`
@@ -177,7 +177,7 @@ stub `fetch`, so no backend is required.
 | Round trips | search → fit analysis, and question → answer → feedback |
 | Aivana (faked) | Client retries only 429/502/504 and unsent requests, never a post-send timeout; live fit analysis retries a wrong JSON shape once, then 502s with the `request_id`; never more than 3 calls per analysis |
 | UI state | Each interview question keeps its own answer; one fit analysis at a time, with an Analyzing… state |
-| Failure paths | Unreachable backend and a failing search both surface to the user; health returns 503 when the database is down |
+| Failure paths | Unreachable backend and a failing search both surface to the user; a failed fit analysis shows the backend's message and `request_id`; health returns 503 when the database is down |
 
 ## Aivana MMI
 
@@ -223,7 +223,6 @@ and installs a transport that fails on any real request.
 ## Known gaps
 
 - Only fit analysis uses Aivana; interview questions and feedback are still canned.
-- The frontend shows a 502 as `Error: 502 Bad Gateway`, not Aivana's message or `request_id`.
 - No third-party job API yet -- still undecided. Location/remote filters
   are sent but not applied by the mock search.
 - No auth. `search_logs.user_id` is nullable and always null; the frontend

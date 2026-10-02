@@ -18,6 +18,19 @@ const QUESTION = {
   type: 'behavioral' as const,
 }
 
+/** A non-2xx reply; `body` undefined means the body isn't JSON. */
+class HttpReply {
+  status: number
+  statusText: string
+  body?: unknown
+
+  constructor(status: number, statusText: string, body?: unknown) {
+    this.status = status
+    this.statusText = statusText
+    this.body = body
+  }
+}
+
 /** Routes each API path to a canned response so tests never need a live backend. */
 function mockApi(overrides: Record<string, unknown> = {}) {
   const routes: Record<string, unknown> = {
@@ -43,6 +56,13 @@ function mockApi(overrides: Record<string, unknown> = {}) {
     const body = routes[url]
     if (body === undefined) throw new Error(`unmocked route: ${url}`)
     if (body instanceof Error) throw body
+    if (body instanceof HttpReply) {
+      const json = async () => {
+        if (body.body === undefined) throw new SyntaxError('Unexpected token <')
+        return body.body
+      }
+      return { ok: false, status: body.status, statusText: body.statusText, json } as Response
+    }
     if (body instanceof Promise) {
       const resolved = await body
       return { ok: true, status: 200, statusText: 'OK', json: async () => resolved } as Response
@@ -133,6 +153,32 @@ describe('App', () => {
 
     await user.click(screen.getByRole('button', { name: 'Search' }))
     expect(await screen.findByText(/500 Internal Server Error/)).toBeInTheDocument()
+  })
+
+  it('shows the backend error message and request id when fit analysis fails', async () => {
+    mockApi({
+      '/api/jobs/fit-analysis': new HttpReply(502, 'Bad Gateway', {
+        detail: { message: 'Aivana returned an invalid response', code: 'invalid_response', request_id: 'req_42' },
+      }),
+    })
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Search' }))
+    await user.click(await screen.findByRole('button', { name: 'Analyze fit' }))
+
+    expect(await screen.findByText('Error: Aivana returned an invalid response (request req_42)')).toBeInTheDocument()
+  })
+
+  it('falls back to the status line when the error body is not JSON', async () => {
+    mockApi({ '/api/jobs/fit-analysis': new HttpReply(502, 'Bad Gateway') })
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Search' }))
+    await user.click(await screen.findByRole('button', { name: 'Analyze fit' }))
+
+    expect(await screen.findByText('Error: 502 Bad Gateway')).toBeInTheDocument()
   })
 
   it('runs a question -> answer -> feedback round trip', async () => {

@@ -14,9 +14,23 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   })
   if (!res.ok) {
-    throw new Error(`${res.status} ${res.statusText}`)
+    throw new Error(await errorMessage(res))
   }
   return res.json() as Promise<T>
+}
+
+// Backend errors look like {"detail": ...}. Aivana failures put {message, code, request_id}
+// there; anything else (e.g. a 422's list of field errors) falls back to the status line.
+async function errorMessage(res: Response): Promise<string> {
+  try {
+    const detail = (await res.json())?.detail
+    if (typeof detail?.message === 'string') {
+      return detail.request_id ? `${detail.message} (request ${detail.request_id})` : detail.message
+    }
+  } catch {
+    // body wasn't JSON
+  }
+  return `${res.status} ${res.statusText}`
 }
 
 const post = <T>(path: string, body: unknown) =>
