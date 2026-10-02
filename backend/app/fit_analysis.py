@@ -13,8 +13,9 @@ from app.schemas import FitAnalysisRequest, FitAnalysisResult
 
 TEMPLATE = '{"summary": "<1-2 sentences>", "strengths": ["..."], "gaps": ["..."], "recommendations": ["..."]}'
 
-# AI output is probabilistic, so a wrong shape gets one more try before we give up.
-ATTEMPTS = 2
+# AI output is probabilistic, so a wrong shape gets one more try -- if the shared
+# budget still has a call left after any transport retries.
+FORMAT_ATTEMPTS = 2
 
 
 def build_prompt(req: FitAnalysisRequest) -> str:
@@ -33,9 +34,12 @@ def build_prompt(req: FitAnalysisRequest) -> str:
 
 def analyze_fit(req: FitAnalysisRequest) -> FitAnalysisResult:
     prompt = build_prompt(req)
+    budget = aivana.Budget()  # one budget for the whole analysis: at most MAX_CALLS requests
     request_id = None
-    for _ in range(ATTEMPTS):
-        res = aivana.generate(prompt, output_shape="extract")
+    for _ in range(FORMAT_ATTEMPTS):
+        if not budget.has_call():
+            break
+        res = aivana.generate(prompt, output_shape="extract", budget=budget)
         request_id = res.get("request_id")
         try:
             return FitAnalysisResult.model_validate(res.get("structured"))

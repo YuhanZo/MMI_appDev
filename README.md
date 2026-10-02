@@ -159,7 +159,7 @@ drift apart.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 30 tests
+cd backend && .venv/bin/pytest          # 35 tests
 cd frontend && npm test                 # 8 tests
 ```
 
@@ -175,7 +175,7 @@ stub `fetch`, so no backend is required.
 | Persistence | A job search writes a `search_logs` row with the right values |
 | Isolation | Startup table creation goes to the test database, not the configured one |
 | Round trips | search → fit analysis, and question → answer → feedback |
-| Aivana (faked) | Client retries only 429/502/504 and unsent requests, never a post-send timeout; live fit analysis retries a wrong JSON shape once, then 502s with the `request_id` |
+| Aivana (faked) | Client retries only 429/502/504 and unsent requests, never a post-send timeout; live fit analysis retries a wrong JSON shape once, then 502s with the `request_id`; never more than 3 calls per analysis |
 | UI state | Each interview question keeps its own answer; one fit analysis at a time, with an Analyzing… state |
 | Failure paths | Unreachable backend and a failing search both surface to the user; health returns 503 when the database is down |
 
@@ -195,7 +195,9 @@ why. A key used against the wrong environment gets `401 invalid_api_key`.
 Fit analysis (`backend/app/fit_analysis.py`) sends the job and profile with a
 JSON template in the prompt and `output_shape: "extract"`, then validates
 Aivana's `structured` reply against `FitAnalysisResult`. A wrong shape is
-retried once, then returned as 502 `bad_output`. (The template must be in the
+retried once, then returned as 502 `bad_output`. Transport retries and the
+format retry share one budget per analysis: **at most 3 Aivana calls within
+90 s**, and each request's timeout is capped by the time left. (The template must be in the
 prompt: in testing, Aivana ignored format instructions given only in `system`.)
 
 All calls go through `backend/app/aivana.py`: 60 s timeout. Retried (at most

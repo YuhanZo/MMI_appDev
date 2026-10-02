@@ -66,7 +66,7 @@ def test_generate_honours_retry_after_then_gives_up(monkeypatch):
     with pytest.raises(aivana.AivanaError) as exc:
         aivana.generate("hi")
     assert exc.value.code == "rate_limit_exceeded"
-    assert len(seen) == aivana.MAX_RETRIES + 1
+    assert len(seen) == aivana.MAX_CALLS
     assert waits == [3.0, 3.0]
 
 
@@ -76,7 +76,7 @@ def test_a_connection_failure_is_retried_because_nothing_was_sent(monkeypatch):
     with pytest.raises(aivana.AivanaError) as exc:
         aivana.generate("hi")
     assert exc.value.code == "network_error"
-    assert len(seen) == aivana.MAX_RETRIES + 1
+    assert len(seen) == aivana.MAX_CALLS
 
 
 def test_a_read_timeout_is_not_retried_because_the_run_may_have_happened(monkeypatch):
@@ -125,6 +125,40 @@ def test_a_non_numeric_retry_after_falls_back_to_backoff(monkeypatch):
         aivana.generate("hi")
     assert exc.value.code == "rate_limit_exceeded"
     assert len(waits) == 2 and all(1 <= w < 5 for w in waits)
+
+
+class FakeClock:
+    def __init__(self):
+        self.now = 0.0
+
+    def __call__(self):
+        return self.now
+
+
+def test_each_request_timeout_is_capped_by_the_time_left(monkeypatch):
+    clock = FakeClock()
+    seen = fake_aivana(monkeypatch, httpx.Response(200, json=OK_BODY))
+    budget = aivana.Budget(seconds=90, clock=clock)
+    clock.now = 70  # 20 s left
+    aivana.generate("hi", budget=budget)
+    assert seen[0].extensions["timeout"]["read"] == pytest.approx(20)
+
+
+def test_no_retry_when_the_wait_would_overrun_the_budget(monkeypatch):
+    slow_down = error(429, "rate_limit_exceeded", retry_after_ms=30000)
+    seen = fake_aivana(monkeypatch, slow_down, httpx.Response(200, json=OK_BODY))
+    with pytest.raises(aivana.AivanaError) as exc:
+        aivana.generate("hi", budget=aivana.Budget(seconds=20, clock=FakeClock()))
+    assert exc.value.code == "rate_limit_exceeded"
+    assert len(seen) == 1
+
+
+def test_a_spent_budget_sends_nothing(monkeypatch):
+    seen = fake_aivana(monkeypatch)
+    with pytest.raises(aivana.AivanaError) as exc:
+        aivana.generate("hi", budget=aivana.Budget(calls=0))
+    assert exc.value.code == "budget_exhausted"
+    assert seen == []
 
 
 def test_live_mode_requires_credentials():

@@ -79,6 +79,24 @@ def test_wrong_shape_twice_is_a_502(client, live, sample_job, sample_profile):
     }
 
 
+def test_retries_share_one_budget_of_three_calls(client, live, sample_job, sample_profile):
+    """Two transport retries use up the budget, so the wrong shape gets no second round."""
+    upstream = httpx.Response(502, json={"error": {"code": "upstream_error", "message": "x", "request_id": "r"}})
+    seen = live(upstream, upstream, WRONG_SHAPE, GOOD)
+    res = post_fit(client, sample_job, sample_profile)
+    assert res.status_code == 502
+    assert res.json()["detail"]["code"] == "bad_output"
+    assert len(seen) == 3
+
+
+def test_worst_case_is_three_calls_not_six(client, live, sample_job, sample_profile):
+    upstream = httpx.Response(502, json={"error": {"code": "upstream_error", "message": "x", "request_id": "r"}})
+    seen = live(*[upstream] * 6)
+    res = post_fit(client, sample_job, sample_profile)
+    assert res.status_code == 502
+    assert len(seen) == 3
+
+
 def test_aivana_errors_surface_as_502_with_request_id(client, live, sample_job, sample_profile):
     live(httpx.Response(401, json={"error": {"code": "invalid_api_key", "message": "Invalid key", "request_id": "req_x"}}))
     res = post_fit(client, sample_job, sample_profile)
