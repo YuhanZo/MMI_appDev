@@ -1,11 +1,15 @@
-"""Each test run gets its own throwaway database, so tests never touch dev.db."""
+"""Each test gets its own throwaway database, so tests never touch the configured one.
+
+The app reads its engine from app.state.engine (startup table creation, requests and
+/api/health all use it), so swapping that one attribute isolates everything.
+"""
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.db import Base, get_db
+from app.db import Base
 from app.main import app
 
 
@@ -22,19 +26,13 @@ def db_engine(tmp_path):
 
 @pytest.fixture
 def client(db_engine):
-    TestingSession = sessionmaker(bind=db_engine, autoflush=False, expire_on_commit=False)
-
-    def override_get_db():
-        db = TestingSession()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
-        yield c
-    app.dependency_overrides.clear()
+    configured = app.state.engine
+    app.state.engine = db_engine
+    try:
+        with TestClient(app) as c:
+            yield c
+    finally:
+        app.state.engine = configured
 
 
 @pytest.fixture

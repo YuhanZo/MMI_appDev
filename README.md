@@ -150,19 +150,21 @@ drift apart.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 12 tests
+cd backend && .venv/bin/pytest          # 13 tests
 cd frontend && npm test                 # 7 tests
 ```
 
-Neither suite needs a running server. Backend tests get a fresh throwaway
-SQLite file per test, so `dev.db` is never touched; frontend tests stub
-`fetch`, so no backend is required.
+Neither suite needs a running server. Backend tests swap `app.state.engine`
+for a fresh throwaway SQLite file per test, so the configured database
+(`dev.db` or Postgres) is never touched, not even at startup; frontend tests
+stub `fetch`, so no backend is required.
 
 | Area | Checks |
 | --- | --- |
 | Shared format | Every response's field set matches the shared format doc |
 | Validation | Malformed requests get 422, not a 500 |
 | Persistence | A job search writes a `search_logs` row with the right values |
+| Isolation | Startup table creation goes to the test database, not the configured one |
 | Round trips | search → fit analysis, and question → answer → feedback |
 | UI state | Each interview question keeps its own answer |
 | Failure paths | Unreachable backend and a failing search both surface to the user |
