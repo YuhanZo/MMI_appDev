@@ -23,6 +23,9 @@ python3 -m venv .venv
 cp .env.example .env          # optional -- defaults work as-is
 ```
 
+Backend versions are pinned in `requirements.txt` to the set the tests pass
+on. To upgrade, bump a pin, reinstall and re-run the tests before committing.
+
 **Frontend**
 
 ```bash
