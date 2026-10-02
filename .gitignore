@@ -234,3 +234,7 @@ ref/*.pdf
 # Test artifacts
 .pytest_cache/
 coverage/
+
+# Local-only notes, not shared
+CLAUDE.md
+ROADMAP.md
