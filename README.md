@@ -35,7 +35,23 @@ npm install
 
 ## Run
 
-Use two terminals, and start the backend first.
+From the repo root, one command starts both (no venv activation needed):
+
+```bash
+./dev.sh          # or: make dev
+```
+
+Output from each side is prefixed `[backend]` / `[frontend]`. `Ctrl+C` stops
+both, and if either one crashes the other is stopped too. It refuses to start if
+port 8000 or 5173 is already in use or the first-time setup hasn't been done.
+(Linux/macOS; on Windows use WSL or the two-terminal steps below.)
+
+Open http://localhost:5173. The top bar should show
+`Backend: ok (db: sqlite)` with a green dot.
+
+### Or in two terminals
+
+Useful on Windows, or to restart one side on its own. Start the backend first.
 
 **Terminal 1 — backend** (http://localhost:8000)
 
@@ -54,9 +70,6 @@ cd frontend
 npm run dev
 ```
 
-Open http://localhost:5173. The top bar should show
-`Backend: ok (db: sqlite)` with a green dot.
-
 Both servers reload on save. Stop each with `Ctrl+C`.
 
 - API docs (Swagger, try any endpoint): http://localhost:8000/docs
@@ -66,10 +79,13 @@ Both servers reload on save. Stop each with `Ctrl+C`.
 
 | Symptom | Cause / fix |
 | --- | --- |
-| Page shows `backend unreachable` or `Error: 502 Bad Gateway` | The backend isn't running (start it in terminal 1, then refresh), or `/api/health` returned 503 because the database is unreachable. |
+| Page shows `backend unreachable` or `Error: 502 Bad Gateway` | The backend isn't running (start it, then refresh), or `/api/health` returned 503 because the database is unreachable. |
 | Backend exits with `unable to open database file` / `Application startup failed` | It can't reach `DATABASE_URL` at startup (tables are created then). Check the URL in `backend/.env`. |
 | `npm error enoent Could not read package.json` | `npm run dev` was run in `backend/`. It belongs in `frontend/`. |
-| `uvicorn: command not found` | The venv isn't active. Run `source .venv/bin/activate`, or use `.venv/bin/uvicorn ...`. |
+| `uvicorn: command not found` | The venv isn't active. Run `source .venv/bin/activate`, use `.venv/bin/uvicorn ...`, or use `./dev.sh`. |
+| `dev.sh: port 8000 is already in use` | A backend (or frontend, for 5173) is already running. Stop it, or use the one that's running. |
+| `make: command not found` | Install make (`sudo dnf install make` / `sudo apt install make`), or just run `./dev.sh`. |
+| A server stops right after starting in a new VS Code terminal | VS Code typed `source .venv/bin/activate` into the terminal and interrupted it. Wait for `(.venv)` to appear before starting. |
 
 ## Architecture
 
@@ -88,6 +104,8 @@ listings and the interview -- is still **mocked** in `backend/app/mock_data.py`.
 ```
 .
 ├── README.md                  you are here
+├── dev.sh                     start backend + frontend together (`make dev` calls it)
+├── Makefile
 ├── ref/
 │   ├── overview.txt           Aivana's project brief
 │   └── prototype-data-format-v0.1.md   shared request/response format (source of truth)
