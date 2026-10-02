@@ -18,7 +18,6 @@ const NAV: { view: View; label: string; icon: IconName }[] = [
   { view: 'interview', label: 'Mock Interview', icon: 'mic' },
 ]
 
-// Lives in App (not the Job Search view) because the search box is in the top bar.
 function useJobSearch() {
   const [role, setRole] = useState('Software Engineer Intern')
   const [location, setLocation] = useState('Columbus, OH')
@@ -54,8 +53,6 @@ function useJobSearch() {
   return { role, setRole, location, setLocation, remote, setRemote, jobs, fit, error, analyzingId, search, analyze }
 }
 
-type JobSearchState = ReturnType<typeof useJobSearch>
-
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <details open className="section">
@@ -70,28 +67,50 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   )
 }
 
-function JobSearchView({ js }: { js: JobSearchState }) {
+function JobSearchView() {
+  const js = useJobSearch()
+
+  function onSearch(e: FormEvent) {
+    e.preventDefault()
+    js.search()
+  }
+
   return (
     <>
       <h1>Welcome to Career Assistant</h1>
 
-      <Section title="Filters">
-        <div className="chips">
-          <label className="chip chip-input">
-            <Icon name="place" size={18} />
-            <input aria-label="Location" value={js.location} onChange={(e) => js.setLocation(e.target.value)} />
-          </label>
-          <label className={`chip${js.remote ? ' chip-on' : ''}`}>
+      {/* Job search lives here, not in the top bar: a top-bar box reads as site-wide search. */}
+      <Section title="Search jobs">
+        <form className="job-search" onSubmit={onSearch}>
+          <label className="search-field">
+            <Icon name="search" />
             <input
-              className="visually-hidden"
-              type="checkbox"
-              checked={js.remote}
-              onChange={(e) => js.setRemote(e.target.checked)}
+              aria-label="Role"
+              value={js.role}
+              onChange={(e) => js.setRole(e.target.value)}
+              placeholder="Role, e.g. Software Engineer Intern"
             />
-            {js.remote && <Icon name="check" size={18} />}
-            Remote
           </label>
-        </div>
+          <div className="chips">
+            <label className="chip chip-input">
+              <Icon name="place" size={18} />
+              <input aria-label="Location" value={js.location} onChange={(e) => js.setLocation(e.target.value)} />
+            </label>
+            <label className={`chip${js.remote ? ' chip-on' : ''}`}>
+              <input
+                className="visually-hidden"
+                type="checkbox"
+                checked={js.remote}
+                onChange={(e) => js.setRemote(e.target.checked)}
+              />
+              {js.remote && <Icon name="check" size={18} />}
+              Remote
+            </label>
+            <button type="submit" className="btn-filled">
+              Search
+            </button>
+          </div>
+        </form>
       </Section>
 
       {js.error && (
@@ -102,7 +121,7 @@ function JobSearchView({ js }: { js: JobSearchState }) {
 
       <Section title="Results">
         {js.jobs.length === 0 ? (
-          <p className="empty">Search for a role in the bar above to see matching jobs.</p>
+          <p className="empty">Search for a role above to see matching jobs.</p>
         ) : (
           <div className="table-wrap">
             <table className="file-table">
@@ -244,7 +263,6 @@ function MockInterviewView() {
 export default function App() {
   const [view, setView] = useState<View>('jobs')
   const [status, setStatus] = useState('checking...')
-  const js = useJobSearch()
 
   useEffect(() => {
     api
@@ -252,12 +270,6 @@ export default function App() {
       .then((h) => setStatus(`${h.status} (db: ${h.database})`))
       .catch(() => setStatus('backend unreachable'))
   }, [])
-
-  function onSearch(e: FormEvent) {
-    e.preventDefault()
-    setView('jobs')
-    js.search()
-  }
 
   const health = status.startsWith('ok') ? 'ok' : status === 'backend unreachable' ? 'down' : 'checking'
 
@@ -270,18 +282,6 @@ export default function App() {
           </span>
           <span className="brand-name">Career Assistant</span>
         </div>
-
-        <form className="searchbar" role="search" onSubmit={onSearch}>
-          <button type="submit" className="icon-btn" aria-label="Search">
-            <Icon name="search" />
-          </button>
-          <input
-            aria-label="Role"
-            value={js.role}
-            onChange={(e) => js.setRole(e.target.value)}
-            placeholder="Search roles, e.g. Software Engineer Intern"
-          />
-        </form>
 
         <div className={`status status-${health}`} title={`Backend: ${status}`}>
           <span className="dot" />
@@ -307,7 +307,7 @@ export default function App() {
       {/* Both views stay mounted (just hidden) so switching keeps their state. */}
       <main className="panel">
         <section hidden={view !== 'jobs'}>
-          <JobSearchView js={js} />
+          <JobSearchView />
         </section>
         <section hidden={view !== 'interview'}>
           <MockInterviewView />

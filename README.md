@@ -123,8 +123,8 @@ listings and the interview -- is still **mocked** in `backend/app/mock_data.py`.
     ├── vite.config.ts         /api proxy + Vitest config
     └── src/
         ├── main.tsx           React entry
-        ├── App.tsx            top bar (search, backend status), sidebar,
-        │                      Job Search and Mock Interview views
+        ├── App.tsx            top bar (backend status), sidebar,
+        │                      Job Search (search form + results) and Mock Interview views
         ├── App.css            layout and component styles (Google Drive-inspired)
         ├── index.css          color tokens (light + dark), base styles
         ├── icons.tsx          inline SVG icons
