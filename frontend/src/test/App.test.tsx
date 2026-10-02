@@ -43,6 +43,10 @@ function mockApi(overrides: Record<string, unknown> = {}) {
     const body = routes[url]
     if (body === undefined) throw new Error(`unmocked route: ${url}`)
     if (body instanceof Error) throw body
+    if (body instanceof Promise) {
+      const resolved = await body
+      return { ok: true, status: 200, statusText: 'OK', json: async () => resolved } as Response
+    }
     return { ok: true, status: 200, statusText: 'OK', json: async () => body } as Response
   })
 
@@ -79,6 +83,29 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Analyze fit' }))
     expect(await screen.findByText('Overall fit summary.')).toBeInTheDocument()
     expect(screen.getByText(/Strong Python experience/)).toBeInTheDocument()
+  })
+
+  it('shows Analyzing… and blocks other analyses while one runs', async () => {
+    let finish!: (v: unknown) => void
+    const pending = new Promise((resolve) => (finish = resolve))
+    mockApi({
+      '/api/jobs/search': [JOB, { ...JOB, id: 'job_002', title: 'Frontend Developer Intern' }],
+      '/api/jobs/fit-analysis': pending,
+    })
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Search' }))
+    const [first] = await screen.findAllByRole('button', { name: 'Analyze fit' })
+    await user.click(first)
+
+    expect(screen.getByRole('button', { name: 'Analyzing…' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Analyze fit' })).toBeDisabled()
+
+    finish({ summary: 'Done.', strengths: [], gaps: [], recommendations: [] })
+    expect(await screen.findByText('Done.')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Analyze fit' })).toHaveLength(2)
+    screen.getAllByRole('button', { name: 'Analyze fit' }).forEach((b) => expect(b).toBeEnabled())
   })
 
   it('sends the search request in the shared data format', async () => {

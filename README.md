@@ -160,7 +160,7 @@ drift apart.
 
 ```bash
 cd backend && .venv/bin/pytest          # 24 tests
-cd frontend && npm test                 # 7 tests
+cd frontend && npm test                 # 8 tests
 ```
 
 Neither suite needs a running server. Backend tests swap `app.state.engine`
@@ -176,7 +176,7 @@ stub `fetch`, so no backend is required.
 | Isolation | Startup table creation goes to the test database, not the configured one |
 | Round trips | search → fit analysis, and question → answer → feedback |
 | Aivana (faked) | Client retries only 429/502/504 and network errors; live fit analysis retries a wrong JSON shape once, then 502s with the `request_id` |
-| UI state | Each interview question keeps its own answer |
+| UI state | Each interview question keeps its own answer; one fit analysis at a time, with an Analyzing… state |
 | Failure paths | Unreachable backend and a failing search both surface to the user; health returns 503 when the database is down |
 
 ## Aivana MMI

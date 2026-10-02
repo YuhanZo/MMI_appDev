@@ -26,6 +26,8 @@ function useJobSearch() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [fit, setFit] = useState<{ job: Job; result: FitAnalysisResult } | null>(null)
   const [error, setError] = useState('')
+  // Live fit analysis takes 8-20 s; track which job is running so the button can say so.
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null)
 
   async function search() {
     setError('')
@@ -39,14 +41,17 @@ function useJobSearch() {
 
   async function analyze(job: Job) {
     setError('')
+    setAnalyzingId(job.id)
     try {
       setFit({ job, result: await api.fitAnalysis({ job, user_profile: DEMO_PROFILE }) })
     } catch (e) {
       setError(String(e))
+    } finally {
+      setAnalyzingId(null)
     }
   }
 
-  return { role, setRole, location, setLocation, remote, setRemote, jobs, fit, error, search, analyze }
+  return { role, setRole, location, setLocation, remote, setRemote, jobs, fit, error, analyzingId, search, analyze }
 }
 
 type JobSearchState = ReturnType<typeof useJobSearch>
@@ -128,8 +133,13 @@ function JobSearchView({ js }: { js: JobSearchState }) {
                     <td>{job.company}</td>
                     <td className="col-location">{job.location}</td>
                     <td className="cell-actions">
-                      <button className="btn-outline" onClick={() => js.analyze(job)}>
-                        Analyze fit
+                      {/* One analysis at a time: each live run spends Aivana credits. */}
+                      <button
+                        className="btn-outline"
+                        disabled={js.analyzingId !== null}
+                        onClick={() => js.analyze(job)}
+                      >
+                        {js.analyzingId === job.id ? 'Analyzing…' : 'Analyze fit'}
                       </button>
                     </td>
                   </tr>

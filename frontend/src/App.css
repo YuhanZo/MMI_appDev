@@ -319,8 +319,13 @@
   color: var(--accent);
 }
 
-.btn-outline:hover {
+.btn-outline:hover:not(:disabled) {
   background: var(--hover);
+}
+
+.btn-outline:disabled {
+  cursor: progress;
+  opacity: 0.6;
 }
 
 .btn-filled {
