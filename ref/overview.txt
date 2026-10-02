@@ -1,0 +1,70 @@
+Project overview
+Description
+Aivana is an Ohio-based AI startup developing a proprietary Multi-Model Intelligence API that allows builders, developers, and businesses to access coordinated intelligence from multiple leading AI models through a single API. Instead of requiring developers to choose and integrate one model API, such as GPT, Claude, Gemini, or Llama, Aivana MMI is designed to provide one simple API powered behind the scenes by multiple AI models working together. As Aivana prepares to commercialize this API, one of the most valuable learning opportunities is to observe how an external developer team would actually use it. This capstone project would ask students to act as an early pilot customer by building a small application powered by the Aivana MMI API. The team will select a practical use case, integrate with the Aivana API, build a lightweight working application, and provide feedback on the developer experience. This project is ideal for students interested in AI application development, API integration, user experience, product design, and real-world startup product validation.
+
+Summary
+Students will build a small application using the Aivana Multi-Model Intelligence API. Students will choose a practical use case, connect to the API, design a simple user experience, and demonstrate how multi-model intelligence can contribute to a valuable user experience.
+
+Is this a continuation of an earlier CSE Capstone project?
+
+Yes
+Will you or another representative be able to attend team demos (2-3) at Ohio State? In person preferred, online possible. NOTE: This is a required component of participating in the capstone course. Demos will have to be rescheduled if you cannot attend.
+
+Yes
+How much time (per week) will you be able to spend with the technical (student) team? (30 min a week is the minimum requirement)
+
+>3 hours
+What are the top 2-3 major objectives you expect to be accomplished this semester?
+
+1. Select and Define a Practical API-Powered Use Case
+Students will work with Aivana to select a small but meaningful application use case where multi-model intelligence can provide value. The use case should be realistic, scoped for the semester, and easy to demonstrate. Possible examples include: A student career decision assistant, A meeting or document analysis assistant, A software planning or code review assistant, A small business decision-support tool, or A personal finance assistant. The chosen use case should show why coordinated multi-model intelligence is useful compared with a standard single-model chatbot.
+
+2. Build a Lightweight Application Using the Aivana MMI API
+Students will design and build a working application that calls the Aivana MMI API and displays the response in a useful way. The application should include a simple user interface, API integration, request/response handling, and basic error handling. The goal is to create a functional pilot app that demonstrates how an external developer could build with Aivana MMI.
+
+3. Provide Developer Experience Feedback to Aivana
+Students will document their experience using the API, including what was easy, what was confusing, what documentation was missing, what API responses were useful, and what improvements would make the API easier to adopt. This feedback will help Aivana improve its developer onboarding, documentation, API design, and customer readiness.
+You will be given all code, tests, and documentation developed by the team. Describe any other special deliverables that you would like to see.
+
+Use Case Brief
+A short description of the application use case, target user, user problem, and why Aivana MMI is valuable for that use case.
+Working Application Prototype
+A lightweight app that integrates with the Aivana MMI API and demonstrates a practical user workflow.
+API Integration Documentation
+A short technical write-up explaining how the team integrated with the API, including example calls, response handling, and any issues encountered.
+Developer Experience Feedback Report
+A practical summary of what worked well, what was confusing, what documentation or tooling could be improved, and what would make the API easier for future developers to adopt.
+Final Demo and Recommendation Summary
+A final presentation demonstrating the application and summarizing key lessons for Aivana.
+What do you expect will be the biggest challenges to completing the objectives of this project by end of semester?
+
+The main challenge will be keeping the application scope small enough to complete within the semester. Aivana will work with the team early to select a practical use case that can be built and demonstrated without requiring a large production system. Another challenge may be that the API and documentation could continue evolving during the semester. This is part of the real-world nature of the project, and Aivana will work closely with the team to provide support, updates, and clear integration guidance. Overall, this project is intended to be highly achievable and hands-on. It gives students experience building with a real AI API while giving Aivana valuable feedback from an early pilot developer team.
+Do you have a preference on platform? Desktop/laptop
+
+No Preference
+Do you have a preference on platform? Web based tool
+
+Slight preference
+Do you have a preference on platform? Mobile app: Android
+
+No Preference
+Do you have a preference on platform? Mobile app: iPhone
+
+Slight preference
+Do you have a preference on platform? Database solution
+
+No Preference
+Other
+
+No Response
+Do you have a preference for development language?
+Python or Node.js for backend/API integration
+
+Are there any special tools or environment of which the technical team should be aware?
+Aivana can provide API access, documentation, onboarding support, and example use cases.
+
+What percentage of the product work will be bug repairs and maintenance? (versus the rest will be new development)
+0% - 10%
+
+Do you have any existing artifacts (software code, tests, documents, etc.) that the technical team can use to get started?
+Yes

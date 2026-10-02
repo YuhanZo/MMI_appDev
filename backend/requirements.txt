@@ -1,0 +1,14 @@
+# Direct dependencies, pinned to the versions the test suite passes on
+# (Python 3.14). Bump deliberately and re-run the tests.
+fastapi==0.141.1
+uvicorn[standard]==0.54.0
+pydantic-settings==2.15.0
+sqlalchemy==2.1.1
+python-dotenv==1.2.3
+
+# Tests
+pytest==9.1.1
+httpx==0.28.1
+
+# Uncomment when moving to Postgres:
+# psycopg[binary]
