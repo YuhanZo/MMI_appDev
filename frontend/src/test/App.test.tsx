@@ -113,11 +113,30 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
+    await user.click(screen.getByRole('button', { name: 'Mock Interview' }))
     expect(await screen.findByText(/Tell me about a challenging software project/)).toBeInTheDocument()
 
     await user.type(screen.getByLabelText('Your answer'), 'I led a project that...')
     await user.click(screen.getByRole('button', { name: 'Submit answer' }))
 
     expect(await screen.findByText(/Overall feedback\./)).toBeInTheDocument()
+  })
+
+  it('keeps each question’s answer separate', async () => {
+    mockApi({
+      '/api/interview/questions': [
+        QUESTION,
+        { id: 'q2', question: 'How would you design a REST API for job search?', type: 'technical' },
+      ],
+    })
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Mock Interview' }))
+    const [first, second] = await screen.findAllByLabelText('Your answer')
+    await user.type(first, 'Only for the first question')
+
+    expect(first).toHaveValue('Only for the first question')
+    expect(second).toHaveValue('')
   })
 })
