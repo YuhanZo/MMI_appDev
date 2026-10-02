@@ -159,7 +159,7 @@ drift apart.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 28 tests
+cd backend && .venv/bin/pytest          # 30 tests
 cd frontend && npm test                 # 8 tests
 ```
 
@@ -175,7 +175,7 @@ stub `fetch`, so no backend is required.
 | Persistence | A job search writes a `search_logs` row with the right values |
 | Isolation | Startup table creation goes to the test database, not the configured one |
 | Round trips | search → fit analysis, and question → answer → feedback |
-| Aivana (faked) | Client retries only 429/502/504 and network errors; live fit analysis retries a wrong JSON shape once, then 502s with the `request_id` |
+| Aivana (faked) | Client retries only 429/502/504 and unsent requests, never a post-send timeout; live fit analysis retries a wrong JSON shape once, then 502s with the `request_id` |
 | UI state | Each interview question keeps its own answer; one fit analysis at a time, with an Analyzing… state |
 | Failure paths | Unreachable backend and a failing search both surface to the user; health returns 503 when the database is down |
 
@@ -198,9 +198,11 @@ Aivana's `structured` reply against `FitAnalysisResult`. A wrong shape is
 retried once, then returned as 502 `bad_output`. (The template must be in the
 prompt: in testing, Aivana ignored format instructions given only in `system`.)
 
-All calls go through `backend/app/aivana.py`: 60 s timeout, and only 429 / 502 /
-504 and network failures are retried (at most twice, honouring
-`retry_after_ms`). A reply that isn't the documented JSON object (non-JSON body,
+All calls go through `backend/app/aivana.py`: 60 s timeout. Retried (at most
+twice, honouring `retry_after_ms`): 429 / 502 / 504, and connection failures
+before the request was sent. **Not** retried: a timeout or dropped connection
+after sending (`code: timeout`) -- the run may already have been charged, and
+Aivana has no idempotency key. A reply that isn't the documented JSON object (non-JSON body,
 a list, a malformed `error`) becomes `invalid_response`, so the route returns
 502 rather than crashing with 500. Tests never reach the real API: `conftest.py` forces mock mode
 and installs a transport that fails on any real request.

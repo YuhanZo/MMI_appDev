@@ -70,12 +70,29 @@ def test_generate_honours_retry_after_then_gives_up(monkeypatch):
     assert waits == [3.0, 3.0]
 
 
-def test_generate_reports_a_network_failure(monkeypatch):
+def test_a_connection_failure_is_retried_because_nothing_was_sent(monkeypatch):
     down = httpx.ConnectError("connection refused")
-    fake_aivana(monkeypatch, down, down, down)
+    seen = fake_aivana(monkeypatch, down, down, down)
     with pytest.raises(aivana.AivanaError) as exc:
         aivana.generate("hi")
     assert exc.value.code == "network_error"
+    assert len(seen) == aivana.MAX_RETRIES + 1
+
+
+def test_a_read_timeout_is_not_retried_because_the_run_may_have_happened(monkeypatch):
+    seen = fake_aivana(monkeypatch, httpx.ReadTimeout("timed out"), httpx.Response(200, json=OK_BODY))
+    with pytest.raises(aivana.AivanaError) as exc:
+        aivana.generate("hi")
+    assert exc.value.code == "timeout"
+    assert len(seen) == 1
+
+
+def test_a_dropped_connection_after_sending_is_not_retried(monkeypatch):
+    seen = fake_aivana(monkeypatch, httpx.RemoteProtocolError("server disconnected"), httpx.Response(200, json=OK_BODY))
+    with pytest.raises(aivana.AivanaError) as exc:
+        aivana.generate("hi")
+    assert exc.value.code == "network_error"
+    assert len(seen) == 1
 
 
 def test_a_200_that_is_not_json_is_an_invalid_response(monkeypatch):

@@ -1,8 +1,10 @@
 """Client for the Aivana MMI API. Every call to Aivana goes through here.
 
 Docs: https://main.duoh9hfelybuv.amplifyapp.com/docs/generate
-Only 429, 502, 504 and network failures are retried, as the docs advise; failed
-requests aren't charged, so retries don't double the cost.
+Retried: 429, 502 and 504 (the docs say failed requests aren't charged) and
+errors raised before the request was sent. Not retried: a timeout or broken
+connection after sending -- the run may already have executed and been charged,
+and Aivana has no idempotency key to make a resend safe.
 """
 
 import random
@@ -14,6 +16,8 @@ import httpx
 from app.config import settings
 
 RETRYABLE_STATUSES = {429, 502, 504}
+# Raised before any bytes reached Aivana, so resending can't run the prompt twice.
+NOT_SENT_ERRORS = (httpx.ConnectError, httpx.ConnectTimeout, httpx.PoolTimeout)
 MAX_RETRIES = 2
 TIMEOUT_S = 60.0  # live runs took 5-21s in testing
 MAX_WAIT_S = 30.0
@@ -57,11 +61,16 @@ def generate(prompt: str, *, output_shape: str | None = None, effort: str = "low
             last_attempt = attempt == MAX_RETRIES
             try:
                 res = client.post("/v1/generate", json=body)
-            except httpx.TransportError as e:  # includes timeouts
+            except NOT_SENT_ERRORS as e:
                 if last_attempt:
                     raise AivanaError(f"Could not reach Aivana ({type(e).__name__})", code="network_error") from e
                 _sleep(_backoff(attempt))
                 continue
+            except httpx.TransportError as e:
+                raise AivanaError(
+                    f"No response from Aivana ({type(e).__name__}); the request may still have run",
+                    code="timeout" if isinstance(e, httpx.TimeoutException) else "network_error",
+                ) from e
 
             if res.status_code == 200:
                 data = _json_object(res)
