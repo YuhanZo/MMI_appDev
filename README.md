@@ -94,10 +94,11 @@ MMI are marked with `This is where the Aivana MMI call goes`.
 │
 ├── backend/
 │   ├── requirements.txt
-│   ├── .env.example           DATABASE_URL, CORS origins, Aivana key (unused yet)
+│   ├── .env.example           DATABASE_URL, CORS origins, Aivana mode/key/URL
 │   ├── pytest.ini
 │   ├── app/
 │   │   ├── main.py            app setup, CORS, table creation, /api/health
+│   │   ├── aivana.py          Aivana MMI client: timeout, retries, typed errors
 │   │   ├── config.py          env-driven settings (reads .env)
 │   │   ├── db.py              engine + get_db session dependency
 │   │   ├── models.py          SQLAlchemy tables: users, profiles, search_logs
@@ -107,8 +108,10 @@ MMI are marked with `This is where the Aivana MMI call goes`.
 │   │       ├── jobs.py        /api/jobs/search, /api/jobs/fit-analysis
 │   │       └── interview.py   /api/interview/questions, /api/interview/feedback
 │   └── tests/
-│       ├── conftest.py        throwaway SQLite per test, test client
+│       ├── conftest.py        throwaway SQLite per test, test client, no real Aivana calls
+│       ├── test_aivana_client.py
 │       ├── test_health.py
+│       ├── test_isolation.py
 │       ├── test_jobs.py
 │       └── test_interview.py
 │
@@ -154,7 +157,7 @@ drift apart.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 14 tests
+cd backend && .venv/bin/pytest          # 20 tests
 cd frontend && npm test                 # 7 tests
 ```
 
@@ -172,6 +175,24 @@ stub `fetch`, so no backend is required.
 | Round trips | search → fit analysis, and question → answer → feedback |
 | UI state | Each interview question keeps its own answer |
 | Failure paths | Unreachable backend and a failing search both surface to the user; health returns 503 when the database is down |
+
+## Aivana MMI
+
+Set in `backend/.env` (never commit the key; `.env` is gitignored):
+
+| Variable | Value |
+| --- | --- |
+| `AIVANA_MODE` | `mock` (default): canned responses, no key needed. `live`: real API calls. |
+| `AIVANA_API_KEY` | Key from AI Studio -> API Keys |
+| `AIVANA_BASE_URL` | `https://dev-developers.aivana.ai` for keys created on the dev studio (amplifyapp.com); `https://developers.aivana.ai` for production keys |
+
+With `AIVANA_MODE=live` and no key or URL, the backend refuses to start and says
+why. A key used against the wrong environment gets `401 invalid_api_key`.
+
+All calls go through `backend/app/aivana.py`: 60 s timeout, and only 429 / 502 /
+504 and network failures are retried (at most twice, honouring
+`retry_after_ms`). Tests never reach the real API: `conftest.py` forces mock mode
+and installs a transport that fails on any real request.
 
 ## Switching to Postgres
 

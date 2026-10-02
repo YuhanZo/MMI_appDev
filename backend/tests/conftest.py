@@ -4,13 +4,34 @@ The app reads its engine from app.state.engine (startup table creation, requests
 /api/health all use it), so swapping that one attribute isolates everything.
 """
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from app import aivana
+from app.config import settings
 from app.db import Base
 from app.main import app
+
+
+@pytest.fixture(autouse=True)
+def no_real_aivana(monkeypatch):
+    """Tests never call the real API, whatever backend/.env says.
+
+    Mock mode by default; any request that slips through to Aivana fails loudly.
+    Tests that exercise the client install their own transport.
+    """
+
+    def refuse(request):
+        raise AssertionError(f"test tried to call the real Aivana API: {request.url}")
+
+    monkeypatch.setattr(settings, "aivana_mode", "mock")
+    monkeypatch.setattr(settings, "aivana_api_key", "test-key")
+    monkeypatch.setattr(settings, "aivana_base_url", "https://aivana.test")
+    monkeypatch.setattr(aivana, "_transport", httpx.MockTransport(refuse))
+    monkeypatch.setattr(aivana, "_sleep", lambda s: None)
 
 
 @pytest.fixture
