@@ -78,6 +78,38 @@ def test_generate_reports_a_network_failure(monkeypatch):
     assert exc.value.code == "network_error"
 
 
+def test_a_200_that_is_not_json_is_an_invalid_response(monkeypatch):
+    fake_aivana(monkeypatch, httpx.Response(200, text="<html>oops</html>", headers={"x-request-id": "req_h"}))
+    with pytest.raises(aivana.AivanaError) as exc:
+        aivana.generate("hi")
+    assert (exc.value.code, exc.value.request_id) == ("invalid_response", "req_h")
+
+
+def test_a_200_that_is_a_json_list_is_an_invalid_response(monkeypatch):
+    fake_aivana(monkeypatch, httpx.Response(200, json=[1, 2]))
+    with pytest.raises(aivana.AivanaError) as exc:
+        aivana.generate("hi")
+    assert exc.value.code == "invalid_response"
+
+
+def test_an_error_body_that_is_not_an_object_is_still_an_aivana_error(monkeypatch):
+    fake_aivana(monkeypatch, httpx.Response(401, json=["bad"]))
+    with pytest.raises(aivana.AivanaError) as exc:
+        aivana.generate("hi")
+    assert (exc.value.status, exc.value.code) == (401, "invalid_response")
+
+
+def test_a_non_numeric_retry_after_falls_back_to_backoff(monkeypatch):
+    waits: list[float] = []
+    monkeypatch.setattr(aivana, "_sleep", waits.append)
+    bad = error(429, "rate_limit_exceeded", retry_after_ms="12000")
+    fake_aivana(monkeypatch, bad, bad, bad)
+    with pytest.raises(aivana.AivanaError) as exc:
+        aivana.generate("hi")
+    assert exc.value.code == "rate_limit_exceeded"
+    assert len(waits) == 2 and all(1 <= w < 5 for w in waits)
+
+
 def test_live_mode_requires_credentials():
     with pytest.raises(ValidationError, match="AIVANA_MODE=live needs"):
         Settings(_env_file=None, aivana_mode="live", aivana_api_key="", aivana_base_url="")

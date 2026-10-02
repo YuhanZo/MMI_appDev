@@ -64,7 +64,15 @@ def generate(prompt: str, *, output_shape: str | None = None, effort: str = "low
                 continue
 
             if res.status_code == 200:
-                return res.json()
+                data = _json_object(res)
+                if data is None:
+                    raise AivanaError(
+                        "Aivana returned an invalid response",
+                        status=200,
+                        code="invalid_response",
+                        request_id=res.headers.get("x-request-id"),
+                    )
+                return data
 
             err = _error_from(res)
             if res.status_code not in RETRYABLE_STATUSES or last_attempt:
@@ -78,23 +86,38 @@ def _backoff(attempt: int) -> float:
     return 2**attempt + random.uniform(0, 0.25)
 
 
-def _error_from(res: httpx.Response) -> AivanaError:
-    """Parse Aivana's {"error": {...}} body; fall back gracefully if it isn't JSON."""
+def _json_object(res: httpx.Response) -> dict[str, Any] | None:
+    """The body as a JSON object, or None if it is not valid JSON or not an object."""
     try:
-        info = res.json().get("error") or {}
+        data = res.json()
     except ValueError:
-        info = {}
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _str_or_none(value: Any) -> str | None:
+    return value if isinstance(value, str) and value else None
+
+
+def _error_from(res: httpx.Response) -> AivanaError:
+    """Parse Aivana's {"error": {...}} body. Any other shape becomes invalid_response;
+    the HTTP status still decides whether to retry."""
+    body = _json_object(res) or {}
+    info = body.get("error")
+    if not isinstance(info, dict):
+        info = {"code": "invalid_response"}
 
     retry_after_s = None
-    if info.get("retry_after_ms") is not None:
-        retry_after_s = info["retry_after_ms"] / 1000
+    ms = info.get("retry_after_ms")
+    if isinstance(ms, (int, float)) and not isinstance(ms, bool) and ms >= 0:
+        retry_after_s = ms / 1000
     elif res.headers.get("retry-after", "").isdigit():
         retry_after_s = float(res.headers["retry-after"])
 
     return AivanaError(
-        info.get("message") or f"Aivana returned HTTP {res.status_code}",
+        _str_or_none(info.get("message")) or f"Aivana returned HTTP {res.status_code}",
         status=res.status_code,
-        code=info.get("code"),
-        request_id=info.get("request_id") or res.headers.get("x-request-id"),
+        code=_str_or_none(info.get("code")),
+        request_id=_str_or_none(info.get("request_id")) or res.headers.get("x-request-id"),
         retry_after_s=retry_after_s,
     )

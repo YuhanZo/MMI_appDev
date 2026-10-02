@@ -159,7 +159,7 @@ drift apart.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 24 tests
+cd backend && .venv/bin/pytest          # 28 tests
 cd frontend && npm test                 # 8 tests
 ```
 
@@ -200,7 +200,9 @@ prompt: in testing, Aivana ignored format instructions given only in `system`.)
 
 All calls go through `backend/app/aivana.py`: 60 s timeout, and only 429 / 502 /
 504 and network failures are retried (at most twice, honouring
-`retry_after_ms`). Tests never reach the real API: `conftest.py` forces mock mode
+`retry_after_ms`). A reply that isn't the documented JSON object (non-JSON body,
+a list, a malformed `error`) becomes `invalid_response`, so the route returns
+502 rather than crashing with 500. Tests never reach the real API: `conftest.py` forces mock mode
 and installs a transport that fails on any real request.
 
 ## Switching to Postgres
