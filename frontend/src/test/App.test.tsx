@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../App'
@@ -13,9 +13,15 @@ const JOB = {
 }
 
 const QUESTION = {
-  id: 'q1',
+  id: 'behavioral-1',
   question: 'Tell me about a challenging software project.',
   type: 'behavioral' as const,
+}
+
+const TECHNICAL_QUESTION = {
+  id: 'technical-1',
+  question: 'How would you design a REST API for job search?',
+  type: 'technical' as const,
 }
 
 /** Routes each API path to a canned response so tests never need a live backend. */
@@ -29,11 +35,21 @@ function mockApi(overrides: Record<string, unknown> = {}) {
       gaps: ['Limited AWS experience'],
       recommendations: ['Review basic AWS services'],
     },
-    '/api/interview/questions': [QUESTION],
+    '/api/interview/questions': [QUESTION, TECHNICAL_QUESTION],
+    '/api/interview/questions?mode=behavioral': [QUESTION],
+    '/api/interview/questions?mode=technical': [TECHNICAL_QUESTION],
     '/api/interview/feedback': {
       summary: 'Overall feedback.',
       strengths: ['Clear explanation'],
       improvements: ['Add measurable results'],
+    },
+    '/api/interview/detailed-feedback': {
+      mode: 'behavioral',
+      ai_feedback: 'Overall feedback.',
+      strengths: ['Clear explanation'],
+      areas_to_improve: ['Add measurable results'],
+      star_structure: 'Use a clearer result.',
+      improved_answer: 'I led a project and measured the outcome.',
     },
     ...overrides,
   }
@@ -53,6 +69,7 @@ function mockApi(overrides: Record<string, unknown> = {}) {
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
+  localStorage.clear()
 })
 
 describe('App', () => {
@@ -113,30 +130,40 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.click(screen.getByRole('button', { name: 'Mock Interview' }))
+    await user.click(screen.getByRole('button', { name: 'Behavioral Interview' }))
+    const setup = screen.getByRole('region', { name: 'Behavioral Interview Setup' })
+    await user.type(within(setup).getByLabelText('Company'), 'Aivana')
+    await user.type(within(setup).getByLabelText('Position / Job Title'), 'Engineer')
+    await user.click(within(setup).getByRole('button', { name: 'Start Interview' }))
     expect(await screen.findByText(/Tell me about a challenging software project/)).toBeInTheDocument()
 
-    await user.type(screen.getByLabelText('Your answer'), 'I led a project that...')
-    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
+    await user.type(screen.getByLabelText('Your Answer'), 'I led a project that...')
+    await user.click(screen.getByRole('button', { name: 'Submit Answer' }))
 
     expect(await screen.findByText(/Overall feedback\./)).toBeInTheDocument()
   })
 
-  it('keeps each question’s answer separate', async () => {
-    mockApi({
-      '/api/interview/questions': [
-        QUESTION,
-        { id: 'q2', question: 'How would you design a REST API for job search?', type: 'technical' },
-      ],
-    })
+  it('opens the technical setup from its navigation item', async () => {
+    mockApi()
     const user = userEvent.setup()
     render(<App />)
 
-    await user.click(screen.getByRole('button', { name: 'Mock Interview' }))
-    const [first, second] = await screen.findAllByLabelText('Your answer')
-    await user.type(first, 'Only for the first question')
+    await user.click(screen.getByRole('button', { name: 'Technical Interview' }))
+    expect(screen.getByRole('heading', { name: 'Technical Interview Setup' })).toBeInTheDocument()
+  })
 
-    expect(first).toHaveValue('Only for the first question')
-    expect(second).toHaveValue('')
+  it('opens the enhanced profile from the existing account menu', async () => {
+    mockApi()
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Account menu' }))
+    await user.click(screen.getByRole('menuitem', { name: 'My Profile' }))
+
+    expect(screen.getByRole('heading', { name: 'About Me' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Skills & Experience' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Career Preferences' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Career Priorities' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Edit Profile' })).toBeInTheDocument()
   })
 })

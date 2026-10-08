@@ -1,9 +1,13 @@
 import type {
+  DetailedFeedbackRequest,
+  DetailedInterviewFeedback,
   FitAnalysisRequest,
   FitAnalysisResult,
   InterviewAnswer,
   InterviewFeedback,
+  InterviewMode,
   InterviewQuestion,
+  InterviewSummary,
   Job,
   JobSearchRequest,
 } from './types'
@@ -29,7 +33,16 @@ export const searchJobs = (req: JobSearchRequest) => post<Job[]>('/api/jobs/sear
 export const fitAnalysis = (req: FitAnalysisRequest) =>
   post<FitAnalysisResult>('/api/jobs/fit-analysis', req)
 
-export const getQuestions = () => request<InterviewQuestion[]>('/api/interview/questions')
+export const getQuestions = (mode?: InterviewMode) =>
+  request<InterviewQuestion[]>(
+    `/api/interview/questions${mode ? `?mode=${encodeURIComponent(mode)}` : ''}`,
+  )
 
 export const getFeedback = (answer: InterviewAnswer) =>
   post<InterviewFeedback>('/api/interview/feedback', answer)
+
+export const getDetailedFeedback = (answer: DetailedFeedbackRequest) =>
+  post<DetailedInterviewFeedback>('/api/interview/detailed-feedback', answer)
+
+export const getInterviewSummary = (mode: InterviewMode) =>
+  request<InterviewSummary>(`/api/interview/summary?mode=${encodeURIComponent(mode)}`)
