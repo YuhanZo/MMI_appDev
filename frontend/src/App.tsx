@@ -1,21 +1,48 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import './App.css'
 import * as api from './api'
 import { Icon, type IconName } from './icons'
 import type { FitAnalysisResult, InterviewFeedback, InterviewQuestion, Job } from './types'
 
-// Placeholder until profiles are stored per user.
 const DEMO_PROFILE = {
   skills: ['Python', 'Java', 'React'],
   education: 'BS Computer Science',
   experience: 'Backend and web development project experience.',
 }
 
-type View = 'jobs' | 'interview'
+// Display-only user info. Kept separate from DEMO_PROFILE because DEMO_PROFILE
+// is sent to the API and must match the shared data format.
+const DEMO_USER = { name: 'Demo User', initials: 'DU' }
+
+type View = 'home' | 'jobs' | 'behavioral' | 'technical' | 'profile'
+type InterviewKind = 'behavioral' | 'technical'
 
 const NAV: { view: View; label: string; icon: IconName }[] = [
+  { view: 'home', label: 'Home', icon: 'sparkle' },
   { view: 'jobs', label: 'Job Search', icon: 'work' },
-  { view: 'interview', label: 'Mock Interview', icon: 'mic' },
+  { view: 'behavioral', label: 'Behavioral Interview', icon: 'mic' },
+  { view: 'technical', label: 'Technical Interview', icon: 'search' },
+]
+
+const HOME_OPTIONS: { view: View; title: string; description: string; icon: IconName }[] = [
+  {
+    view: 'jobs',
+    title: 'Job Search',
+    description: 'Find real job opportunities and get AI-powered fit analysis.',
+    icon: 'work',
+  },
+  {
+    view: 'behavioral',
+    title: 'Behavioral Interview',
+    description: 'Practice common behavioral questions and get feedback on your answers.',
+    icon: 'mic',
+  },
+  {
+    view: 'technical',
+    title: 'Technical Interview',
+    description: 'Work through technical questions and sharpen your problem-solving.',
+    icon: 'search',
+  },
 ]
 
 // Lives in App (not the Job Search view) because the search box is in the top bar.
@@ -62,6 +89,25 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
       </summary>
       {children}
     </details>
+  )
+}
+
+function HomeView({ onSelect }: { onSelect: (view: View) => void }) {
+  return (
+    <>
+      <h1>What would you like to work on?</h1>
+      <div className="home-grid">
+        {HOME_OPTIONS.map((o) => (
+          <button key={o.view} type="button" className="home-card" onClick={() => onSelect(o.view)}>
+            <span className="home-card-icon">
+              <Icon name={o.icon} />
+            </span>
+            <span className="home-card-title">{o.title}</span>
+            <span className="home-card-desc">{o.description}</span>
+          </button>
+        ))}
+      </div>
+    </>
   )
 }
 
@@ -173,7 +219,7 @@ function FitList({ title, items }: { title: string; items: string[] }) {
   )
 }
 
-function MockInterviewView() {
+function MockInterviewView({ kind, title }: { kind: InterviewKind; title: string }) {
   const [questions, setQuestions] = useState<InterviewQuestion[]>([])
   // Keyed by question id so each question keeps its own answer and feedback.
   const [answers, setAnswers] = useState<Record<string, string>>({})
@@ -183,6 +229,9 @@ function MockInterviewView() {
     api.getQuestions().then(setQuestions).catch(() => setQuestions([]))
   }, [])
 
+  // Only show questions of this view's type (behavioral or technical).
+  const visible = questions.filter((q) => String(q.type).toLowerCase().includes(kind))
+
   async function onSubmit(questionId: string) {
     const fb = await api.getFeedback({ question_id: questionId, answer: answers[questionId] ?? '' })
     setFeedback((prev) => ({ ...prev, [questionId]: fb }))
@@ -190,9 +239,10 @@ function MockInterviewView() {
 
   return (
     <>
-      <h1>Mock Interview</h1>
+      <h1>{title}</h1>
       <Section title="Questions">
-        {questions.map((q) => {
+        {visible.length === 0 && <p className="empty">No {kind} questions available yet.</p>}
+        {visible.map((q) => {
           const fb = feedback[q.id]
           return (
             <div key={q.id} className="tile question">
@@ -231,8 +281,96 @@ function MockInterviewView() {
   )
 }
 
+function ProfileView() {
+  return (
+    <>
+      <h1>My Profile</h1>
+      <Section title="About">
+        <div className="tile profile-card">
+          <span className="avatar avatar-lg">{DEMO_USER.initials}</span>
+          <div>
+            <p className="profile-name">{DEMO_USER.name}</p>
+            <p>{DEMO_PROFILE.education}</p>
+          </div>
+        </div>
+      </Section>
+      <Section title="Skills">
+        <div className="chips">
+          {DEMO_PROFILE.skills.map((skill) => (
+            <span key={skill} className="chip">
+              {skill}
+            </span>
+          ))}
+        </div>
+      </Section>
+      <Section title="Experience">
+        <p>{DEMO_PROFILE.experience}</p>
+      </Section>
+    </>
+  )
+}
+
+function ProfileMenu({ onOpenProfile }: { onOpenProfile: () => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  // Close on outside click or Escape.
+  useEffect(() => {
+    if (!open) return
+    function onClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div className="profile" ref={ref}>
+      <button
+        type="button"
+        className="profile-btn"
+        aria-label="Account menu"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className="avatar">{DEMO_USER.initials}</span>
+      </button>
+
+      {open && (
+        <div className="profile-menu" role="menu">
+          <div className="profile-menu-header">
+            <span className="avatar">{DEMO_USER.initials}</span>
+            <span className="profile-menu-name">{DEMO_USER.name}</span>
+          </div>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false)
+              onOpenProfile()
+            }}
+          >
+            My Profile
+          </button>
+          <button type="button" role="menuitem" disabled title="Sign-in is not built yet">
+            Log out
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function App() {
-  const [view, setView] = useState<View>('jobs')
+  const [view, setView] = useState<View>('home')
   const [status, setStatus] = useState('checking...')
   const js = useJobSearch()
 
@@ -277,6 +415,8 @@ export default function App() {
           <span className="dot" />
           <span className="status-label">Backend: {status}</span>
         </div>
+
+        <ProfileMenu onOpenProfile={() => setView('profile')} />
       </header>
 
       <nav className="sidebar" aria-label="Sections">
@@ -294,13 +434,22 @@ export default function App() {
         ))}
       </nav>
 
-      {/* Both views stay mounted (just hidden) so switching keeps their state. */}
+      {/* All views stay mounted (just hidden) so switching keeps their state. */}
       <main className="panel">
+        <section hidden={view !== 'home'}>
+          <HomeView onSelect={setView} />
+        </section>
         <section hidden={view !== 'jobs'}>
           <JobSearchView js={js} />
         </section>
-        <section hidden={view !== 'interview'}>
-          <MockInterviewView />
+        <section hidden={view !== 'behavioral'}>
+          <MockInterviewView kind="behavioral" title="Behavioral Interview" />
+        </section>
+        <section hidden={view !== 'technical'}>
+          <MockInterviewView kind="technical" title="Technical Interview" />
+        </section>
+        <section hidden={view !== 'profile'}>
+          <ProfileView />
         </section>
       </main>
     </div>
