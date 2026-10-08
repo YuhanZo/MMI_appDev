@@ -16,15 +16,22 @@ Do this once after cloning (and again when `requirements.txt` or
 
 **Backend**
 
-```bash
+
+```powershell
 cd backend
-& "D:\360downloads\Anaconda\envs\env_opt\python.exe" -m venv .venv
-.venv\Scripts\python.exe -m pip install -r requirements.txt
-Copy-Item .env.example .env   # optional -- defaults work as-is
+
+# Create a virtual environment
+python -m venv .venv
+
+# Install dependencies
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+
+# Optional: Create a local environment file (defaults work as-is)
+Copy-Item .env.example .env
 ```
 
-Backend versions are pinned in `requirements.txt` to the set the tests pass
-on. To upgrade, bump a pin, reinstall and re-run the tests before committing.
+Backend versions are pinned in `requirements.txt` to the set the tests pass on. To upgrade, bump a pin, reinstall and re-run the tests before committing.
+
 
 **Frontend**
 
