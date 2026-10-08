@@ -2,13 +2,27 @@
 
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 
+WorkArrangement = Literal["any", "remote", "onsite", "hybrid"]
+ExperienceLevel = Literal["any", "entry", "mid", "senior"]
+EmploymentType = Literal["any", "full_time", "part_time", "contract", "internship"]
 
 class JobSearchRequest(BaseModel):
     role: str
     location: str
-    remote: bool = False
+    work_arrangement: WorkArrangement = "any"
+    experience_level: ExperienceLevel = "any"
+    employment_type: EmploymentType = "any"
+    salary_min: int | None = Field(default=None, ge=0)  # yearly, USD
+    salary_max: int | None = Field(default=None, ge=0)  # yearly, USD
+    industry: str = ""
+
+    @model_validator(mode="after")
+    def check_salary_range(self):
+        if self.salary_min is not None and self.salary_max is not None and self.salary_min > self.salary_max:
+            raise ValueError("salary_min can't be greater than salary_max")
+        return self
 
 
 class Job(BaseModel):
@@ -18,6 +32,7 @@ class Job(BaseModel):
     location: str
     description: str
     url: str
+    company_logo: str = ""  # image URL
 
 
 class UserProfile(BaseModel):

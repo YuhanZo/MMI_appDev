@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     aivana_api_key: str = ""
     aivana_base_url: str = ""
 
+    # JSearch - job search API 
+    jsearch_api_key: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

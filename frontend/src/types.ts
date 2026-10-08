@@ -1,9 +1,18 @@
 // Mirrors ref/prototype-data-format-v0.1.md -- keep in sync with backend/app/schemas.py.
 
+export type WorkArrangement = 'any' | 'remote' | 'onsite' | 'hybrid'
+export type ExperienceLevel = 'any' | 'entry' | 'mid' | 'senior'
+export type EmploymentType = 'any' | 'full_time' | 'part_time' | 'contract' | 'internship'
+
 export interface JobSearchRequest {
   role: string
   location: string
-  remote: boolean
+  work_arrangement: WorkArrangement
+  experience_level: ExperienceLevel
+  employment_type: EmploymentType
+  salary_min: number | null // yearly, USD
+  salary_max: number | null // yearly, USD
+  industry: string
 }
 
 export interface Job {
@@ -13,6 +22,7 @@ export interface Job {
   location: string
   description: string
   url: string
+  company_logo: string // image URL
 }
 
 export interface UserProfile {
