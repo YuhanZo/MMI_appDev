@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Changes since v0.1: interview questions by `mode`, detailed feedback and
-summary (sections 9-11). The filename keeps `v0.1` so existing links still work.
+Changes since v0.1: job search filters and `company_logo` (sections 1-2);
+interview questions by `mode`, detailed feedback and summary (sections 9-11). The filename keeps `v0.1` so existing links still work.
 
 Shared data formats for frontend and backend development.
 
@@ -13,13 +13,18 @@ Frontend can use mock data with the same format before backend/API integration i
 
 ## 1. JobSearchRequest
 
-Used for job search input.
+Used for job search input (`POST /api/jobs/search`).
 
 ```json
 {
   "role": "Software Engineer Intern",
   "location": "Columbus, OH",
-  "remote": true
+  "work_arrangement": "remote",
+  "experience_level": "entry",
+  "employment_type": "internship",
+  "salary_min": 50000,
+  "salary_max": null,
+  "industry": ""
 }
 ```
 
@@ -29,7 +34,14 @@ Used for job search input.
 | --- | --- |
 | `role` | string |
 | `location` | string |
-| `remote` | boolean |
+| `work_arrangement` | `any` \| `remote` \| `onsite` \| `hybrid` (default `any`) |
+| `experience_level` | `any` \| `entry` \| `mid` \| `senior` (default `any`) |
+| `employment_type` | `any` \| `full_time` \| `part_time` \| `contract` \| `internship` (default `any`) |
+| `salary_min` | integer \| null (yearly USD, >= 0) |
+| `salary_max` | integer \| null (yearly USD, >= 0; not below `salary_min`) |
+| `industry` | string (optional keyword, default `""`) |
+
+Replaces v0.1's `remote: boolean` (now `work_arrangement: "remote"`).
 
 ---
 
@@ -44,7 +56,8 @@ Normalized job data returned to the frontend.
   "company": "Example Company",
   "location": "Columbus, OH",
   "description": "Build backend services using Python and AWS.",
-  "url": "https://example.com/job/001"
+  "url": "https://example.com/job/001",
+  "company_logo": "https://example.com/logo.png"
 }
 ```
 
@@ -57,7 +70,8 @@ Normalized job data returned to the frontend.
 | `company` | string |
 | `location` | string |
 | `description` | string |
-| `url` | string |
+| `url` | string (apply link) |
+| `company_logo` | string (image URL, `""` if none) |
 
 ---
 
