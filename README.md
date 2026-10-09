@@ -6,21 +6,30 @@ SQLite by default.
 
 ## Prerequisites
 
-- Python 3.11+ (verified on 3.14)
-- Node 20+ (verified on 22)
+- Python 3.11+ (verified on 3.11)
+- Node 20.19+ or 22.12+ (verified on 24)
 
 ## First-time setup
 
 Do this once after cloning (and again when `requirements.txt` or
 `package.json` changes).
 
-**Backend**
+**Backend** (Linux/macOS)
 
 ```bash
 cd backend
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 cp .env.example .env          # optional -- defaults work as-is
+```
+
+**Backend** (Windows PowerShell)
+
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Copy-Item .env.example .env   # optional -- defaults work as-is
 ```
 
 Backend versions are pinned in `requirements.txt` to the set the tests pass
@@ -57,8 +66,8 @@ Useful on Windows, or to restart one side on its own. Start the backend first.
 
 ```bash
 cd backend
-source .venv/bin/activate
-uvicorn app.main:app --reload --port 8000
+.venv/bin/uvicorn app.main:app --reload --port 8000                      # Linux/macOS
+.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000   # Windows
 ```
 
 Wait for `Application startup complete.`
@@ -141,8 +150,11 @@ listings and the interview -- is still **mocked** in `backend/app/mock_data.py`.
     ├── vite.config.ts         /api proxy + Vitest config
     └── src/
         ├── main.tsx           React entry
-        ├── App.tsx            top bar (backend status), sidebar,
-        │                      Job Search (search form + results) and Mock Interview views
+        ├── App.tsx            top bar, sidebar, Home, Job Search (search form +
+        │                      results), Profile, Behavioral and Technical interview views
+        ├── features/interview setup, five-question session, feedback,
+        │                      completion and summary components
+        ├── features/profile   editable profile page, saved in the browser
         ├── App.css            layout and component styles (Google Drive-inspired)
         ├── index.css          color tokens (light + dark), base styles
         ├── icons.tsx          inline SVG icons
@@ -171,15 +183,20 @@ drift apart.
 | GET | `/api/health` | runs `SELECT 1`; `200 {status: ok, database: <dialect>}`, or `503` if the database is unreachable |
 | POST | `/api/jobs/search` | `Job[]` (mocked; logs the search to the DB) |
 | POST | `/api/jobs/fit-analysis` | `FitAnalysisResult` from Aivana in live mode (8-20 s), canned in mock mode; `502 {detail: {message, code, request_id}}` if Aivana fails |
-| GET | `/api/interview/questions` | `InterviewQuestion[]` (mocked) |
+| GET | `/api/interview/questions?mode=behavioral\|technical` | five prepared questions for the selected mode |
 | POST | `/api/interview/feedback` | `InterviewFeedback` (mocked) |
+| POST | `/api/interview/detailed-feedback` | prepared mode-specific detailed feedback |
+| GET | `/api/interview/summary?mode=behavioral\|technical` | prepared interview summary |
 
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 35 tests
-cd frontend && npm test                 # 10 tests
+cd backend && .venv/bin/pytest          # 43 tests
+cd frontend && npm test                 # 27 tests
 ```
+
+On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`
+and `cd frontend; npm test -- --run`.
 
 Neither suite needs a running server. Backend tests swap `app.state.engine`
 for a fresh throwaway SQLite file per test, so the configured database
@@ -195,6 +212,7 @@ stub `fetch`, so no backend is required.
 | Round trips | search → fit analysis, and question → answer → feedback |
 | Aivana (faked) | Client retries only 429/502/504 and unsent requests, never a post-send timeout; live fit analysis retries a wrong JSON shape once, then 502s with the `request_id`; never more than 3 calls per analysis |
 | UI state | Each interview question keeps its own answer; one fit analysis at a time, with an Analyzing… state |
+| Interview flow | Setup, five questions, detailed feedback, completion, summary and cross-mode launch |
 | Failure paths | Unreachable backend and a failing search both surface to the user; a failed fit analysis shows the backend's message and `request_id`; health returns 503 when the database is down |
 
 ## Aivana MMI
@@ -229,7 +247,7 @@ and installs a transport that fails on any real request.
 
 ## Switching to Postgres
 
-1. `.venv/bin/pip install "psycopg[binary]"`
+1. `.venv\Scripts\python.exe -m pip install "psycopg[binary]"`
 2. In `backend/.env`:
    ```
    DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/career_assistant
@@ -247,5 +265,4 @@ and installs a transport that fails on any real request.
   uses a hard-coded demo profile.
 - `FitAnalysisResult` has no `match_score`, though the proposal's success
   criteria and UI mockup both call for one.
-- A failed interview submission shows no error in the UI.
 - Tables are created via `create_all`; move to Alembic once the schema settles.
