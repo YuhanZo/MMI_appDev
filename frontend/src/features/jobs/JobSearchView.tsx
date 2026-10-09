@@ -132,7 +132,7 @@ function toNumberOrNull(value: string): number | null {
   return value === '' ? null : Number(value)
 }
 
-export default function JobSearchView({ onPracticeInterview }: { onPracticeInterview: () => void }) {
+export default function JobSearchView({ onPracticeInterview }: { onPracticeInterview: (job: Job) => void }) {
   const js = useJobSearch()
   const f = js.filters
 
@@ -334,7 +334,7 @@ function CompanyLogo({ job }: { job: Job }) {
   )
 }
 
-function FitPanel({ js, onPracticeInterview }: { js: JobSearchState; onPracticeInterview: () => void }) {
+function FitPanel({ js, onPracticeInterview }: { js: JobSearchState; onPracticeInterview: (job: Job) => void }) {
   const { selected, fit, analyzing, fitError } = js
 
   if (!selected) {
@@ -378,7 +378,7 @@ function FitPanel({ js, onPracticeInterview }: { js: JobSearchState; onPracticeI
           </div>
 
           <div className="next-steps">
-            <button type="button" className="btn-filled" onClick={onPracticeInterview}>
+            <button type="button" className="btn-filled" onClick={() => onPracticeInterview(selected)}>
               <Icon name="mic" size={18} />
               Practice interview
             </button>

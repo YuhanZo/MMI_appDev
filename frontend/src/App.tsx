@@ -135,7 +135,9 @@ export default function App() {
       .catch(() => setStatus('backend unreachable'))
   }, [])
 
-  function launchOtherInterview(mode: InterviewMode, company: string, position: string) {
+  // Opens an interview straight at question one for a company and position, from a
+  // finished interview ("try the other mode") or from a job's fit panel.
+  function launchInterview(mode: InterviewMode, company: string, position: string) {
     launchNonce.current += 1
     setInterviewLaunch({ mode, company, position, nonce: launchNonce.current })
     setView(mode)
@@ -182,20 +184,20 @@ export default function App() {
           <HomeView onSelect={setView} />
         </section>
         <section hidden={view !== 'jobs'}>
-          <JobSearchView onPracticeInterview={() => setView('behavioral')} />
+          <JobSearchView onPracticeInterview={(job) => launchInterview('behavioral', job.company, job.title)} />
         </section>
         <section hidden={view !== 'behavioral'}>
           <InterviewWorkspace
             mode="behavioral"
             launchRequest={interviewLaunch?.mode === 'behavioral' ? interviewLaunch : null}
-            onTryOtherMode={launchOtherInterview}
+            onTryOtherMode={launchInterview}
           />
         </section>
         <section hidden={view !== 'technical'}>
           <InterviewWorkspace
             mode="technical"
             launchRequest={interviewLaunch?.mode === 'technical' ? interviewLaunch : null}
-            onTryOtherMode={launchOtherInterview}
+            onTryOtherMode={launchInterview}
           />
         </section>
         <section hidden={view !== 'profile'}>

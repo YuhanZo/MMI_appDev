@@ -171,6 +171,19 @@ describe('App', () => {
     localStorage.clear()
   })
 
+  it('starts a behavioral interview for the job from "Practice interview"', async () => {
+    mockApi()
+    const user = userEvent.setup()
+    render(<App />)
+    await openJobSearch(user)
+
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    await user.click(await screen.findByRole('button', { name: /Practice interview/ }))
+
+    expect(await screen.findByText('Example Company · Software Engineer Intern')).toBeInTheDocument()
+    expect(await screen.findByText(/Tell me about a challenging software project/)).toBeInTheDocument()
+  })
+
   it('sends the search request in the shared data format', async () => {
     const fetchMock = mockApi()
     const user = userEvent.setup()
