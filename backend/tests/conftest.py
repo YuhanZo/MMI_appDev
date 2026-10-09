@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app import aivana
+from app import aivana, job_api
 from app.config import settings
 from app.db import Base
 from app.main import app
@@ -32,6 +32,19 @@ def no_real_aivana(monkeypatch):
     monkeypatch.setattr(settings, "aivana_base_url", "https://aivana.test")
     monkeypatch.setattr(aivana, "_transport", httpx.MockTransport(refuse))
     monkeypatch.setattr(aivana, "_sleep", lambda s: None)
+
+
+@pytest.fixture(autouse=True)
+def no_real_jsearch(monkeypatch):
+    """Same for JSearch: mock mode by default, and a real request fails the test
+    (it would spend the 200/month free quota). JSearch tests fake _fetch_listings."""
+
+    async def refuse(params, api_key):
+        raise AssertionError(f"test tried to call the real JSearch API: {params}")
+
+    monkeypatch.setattr(settings, "job_api_mode", "mock")
+    monkeypatch.setattr(settings, "jsearch_api_key", "test-key")
+    monkeypatch.setattr(job_api, "_fetch_listings", refuse)
 
 
 @pytest.fixture

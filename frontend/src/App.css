@@ -1,4 +1,4 @@
-/* ---------- Shell: top bar, sidebar, main panel ---------- */
+/* Shell: top bar, sidebar, main panel*/
 .app {
   display: grid;
   grid-template-columns: 256px minmax(0, 1fr);
@@ -112,7 +112,17 @@
   font-weight: 400;
 }
 
-/* ---------- Collapsible sections ("▾ Suggested folders") ---------- */
+/*  Page heading  */
+.page-head h1 {
+  margin-bottom: 4px;
+}
+
+.page-sub {
+  margin: 0 0 20px;
+  color: var(--text-2);
+}
+
+/*  Collapsible sections (Mock Interview) */
 .section {
   margin-bottom: 20px;
 }
@@ -147,165 +157,119 @@
   transform: rotate(-90deg);
 }
 
-/* ---------- Job search form ---------- */
-.job-search {
+/* Search form */
+.search-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 4px 0;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--surface-2);
 }
 
-.search-field {
+.search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+.filter-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  align-items: end;
+  gap: 12px;
+}
+
+.field {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  max-width: 720px;
-  height: 48px;
-  padding: 0 16px;
-  border-radius: 24px;
-  background: var(--search-bg);
-  color: var(--text-2);
-  transition: background 0.15s, box-shadow 0.15s;
-}
-
-.search-field:focus-within {
-  background: var(--surface);
-  box-shadow: var(--shadow);
-}
-
-.search-field input {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font-size: 16px;
-  outline: none;
-}
-
-/* ---------- Filter chips ---------- */
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  padding: 4px 0;
-}
-
-.chip {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
-  height: 32px;
+  min-width: 0;
+}
+
+.field-label {
+  padding: 0;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.field input,
+.field select {
+  box-sizing: border-box;
+  width: 100%;
+  height: 40px;
   padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  color: var(--text-2);
-  cursor: pointer;
+  background: var(--surface);
+  font: inherit;
+  color: inherit;
 }
 
-.chip:hover {
-  background: var(--hover);
+.field input:focus,
+.field select:focus {
+  border-color: var(--accent);
+  outline: 1px solid var(--accent);
+  outline-offset: -2px;
 }
 
-.chip:focus-within {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
-.chip-on {
-  border-color: transparent;
-  background: var(--active-bg);
-  color: var(--active-text);
-}
-
-.chip-on:hover {
-  background: var(--active-bg);
-}
-
-.chip-input input {
-  width: 140px;
-  border: 0;
-  background: transparent;
-  outline: none;
-}
-
-/* ---------- Results table (Drive file list) ---------- */
-.table-wrap {
-  overflow-x: auto;
-}
-
-.file-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.file-table th {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  color: var(--text-2);
-  font-weight: 500;
-  text-align: left;
-}
-
-.file-table td {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
-  color: var(--text-2);
-  vertical-align: middle;
-}
-
-.file-table tbody tr:hover {
-  background: var(--hover);
-}
-
-.cell-title {
+.input-icon {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 14px;
 }
 
-.file-icon {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: var(--active-bg);
-  color: var(--active-text);
+.input-icon svg {
+  position: absolute;
+  left: 10px;
+  color: var(--text-2);
+  pointer-events: none;
 }
 
-.job-title {
-  display: block;
-  color: var(--text);
-  font-weight: 500;
+.field .input-icon input {
+  padding-left: 34px;
 }
 
-.job-desc {
-  display: block;
+/* The salary pair spans two columns so both boxes stay readable. */
+.salary {
+  grid-column: span 2;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.salary legend {
+  margin-bottom: 6px;
+}
+
+.salary-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-2);
+}
+
+.filter-note {
+  margin: -4px 0 0;
+  color: var(--text-2);
   font-size: 12px;
 }
 
-.cell-actions {
-  text-align: right;
-  white-space: nowrap;
-}
-
-.empty {
-  margin: 8px 4px;
-  color: var(--text-2);
-}
-
-/* ---------- Buttons ---------- */
+/* Buttons */
 .btn-outline,
 .btn-filled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   height: 36px;
   padding: 0 16px;
   border-radius: 18px;
   font-weight: 500;
+  text-decoration: none;
 }
 
 .btn-outline {
@@ -329,11 +293,173 @@
   color: var(--on-accent);
 }
 
-.btn-filled:hover {
+.btn-filled:hover:not(:disabled) {
   box-shadow: var(--shadow);
 }
 
-/* ---------- Tiles: fit analysis + interview questions ---------- */
+.btn-filled:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn-search {
+  height: 40px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* Results: job list + fit panel */
+.result-count {
+  margin: 0 0 8px;
+  color: var(--text-2);
+}
+
+.results {
+  display: grid;
+  grid-template-columns: minmax(260px, 2fr) minmax(0, 3fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.job-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.job-card {
+  display: flex;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: left;
+}
+
+.job-card:hover {
+  background: var(--hover);
+}
+
+.job-card.selected {
+  border-color: var(--accent);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.job-logo {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--active-bg);
+  color: var(--active-text);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+/* Logos get a white tile so transparent or dark logos stay visible in dark mode. */
+.job-logo-img {
+  box-sizing: border-box;
+  padding: 4px;
+  border: 1px solid var(--border);
+  background: #ffffff;
+  object-fit: contain;
+}
+
+.job-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.job-title {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.job-company {
+  color: var(--text);
+}
+
+.job-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+
+.job-desc {
+  display: -webkit-box;
+  margin-top: 4px;
+  overflow: hidden;
+  color: var(--text-2);
+  font-size: 12px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.fit-panel {
+  position: sticky;
+  top: 16px;
+  padding: 16px 20px 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.fit-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.fit-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 2px 0 16px;
+  color: var(--text-2);
+}
+
+.fit-for {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.fit-summary {
+  margin: 0 0 16px;
+}
+
+.fit-sections {
+  display: grid;
+  gap: 12px;
+}
+
+.next-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* Tiles: fit lists + interview questions */
 .tile {
   padding: 14px 16px;
   border-radius: 12px;
@@ -352,27 +478,20 @@
   color: var(--text-2);
 }
 
-.fit {
-  padding: 4px;
+.tile-good {
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
 }
 
-.fit-for {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin: 0 0 6px;
-  color: var(--accent);
-  font-weight: 500;
+.tile-good h3 {
+  color: var(--success);
 }
 
-.fit-summary {
-  margin: 0 0 12px;
+.tile-warn {
+  background: var(--danger-bg);
 }
 
-.fit-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
+.tile-warn h3 {
+  color: var(--danger);
 }
 
 .question {
@@ -418,6 +537,12 @@
   margin: 0 0 4px;
 }
 
+/* Messages  */
+.empty {
+  margin: 8px 4px;
+  color: var(--text-2);
+}
+
 .error {
   margin: 0 0 16px;
   padding: 10px 14px;
@@ -426,7 +551,19 @@
   color: var(--danger);
 }
 
-/* ---------- Narrow screens: sidebar becomes a row of tabs ---------- */
+/*  Medium screens: results stack */
+@media (max-width: 1000px) {
+
+  .results {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fit-panel {
+    position: static;
+  }
+}
+
+/* sidebar becomes a row of tabs */
 @media (max-width: 760px) {
   .app {
     grid-template-columns: minmax(0, 1fr);
@@ -441,9 +578,7 @@
     width: auto;
   }
 
-  .brand-name,
-  .status-label,
-  .col-location {
+  .status-label {
     display: none;
   }
 
@@ -464,6 +599,14 @@
   .panel {
     margin: 0 8px 8px;
     padding: 12px 16px 16px;
+  }
+
+  .search-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .salary {
+    grid-column: auto;
   }
 }
 

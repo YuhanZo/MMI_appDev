@@ -114,42 +114,37 @@ describe('App', () => {
     expect(await screen.findByText(/backend unreachable/)).toBeInTheDocument()
   })
 
-  it('renders search results and then a fit analysis', async () => {
+  it('renders search results and analyzes the top result', async () => {
     mockApi()
     const user = userEvent.setup()
     render(<App />)
     await openJobSearch(user)
 
-    await user.click(screen.getByRole('button', { name: 'Search' }))
-    expect(await screen.findByText('Software Engineer Intern')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    const results = await screen.findByRole('list', { name: 'Job results' })
+    expect(within(results).getByText('Software Engineer Intern')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Analyze fit' }))
+    // The top result is analyzed right away.
     expect(await screen.findByText('Overall fit summary.')).toBeInTheDocument()
     expect(screen.getByText(/Strong Python experience/)).toBeInTheDocument()
   })
 
-  it('shows Analyzing… and blocks other analyses while one runs', async () => {
+  it('shows "Analyzing your fit…" and marks the selected card while the analysis runs', async () => {
     let finish!: (v: unknown) => void
     const pending = new Promise((resolve) => (finish = resolve))
-    mockApi({
-      '/api/jobs/search': [JOB, { ...JOB, id: 'job_002', title: 'Frontend Developer Intern' }],
-      '/api/jobs/fit-analysis': pending,
-    })
+    mockApi({ '/api/jobs/fit-analysis': pending })
     const user = userEvent.setup()
     render(<App />)
     await openJobSearch(user)
 
-    await user.click(screen.getByRole('button', { name: 'Search' }))
-    const [first] = await screen.findAllByRole('button', { name: 'Analyze fit' })
-    await user.click(first)
-
-    expect(screen.getByRole('button', { name: 'Analyzing…' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Analyze fit' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    expect(await screen.findByText('Analyzing your fit…')).toBeInTheDocument()
+    const results = screen.getByRole('list', { name: 'Job results' })
+    expect(within(results).getByRole('button', { pressed: true })).toBeInTheDocument()
 
     finish({ summary: 'Done.', strengths: [], gaps: [], recommendations: [] })
     expect(await screen.findByText('Done.')).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: 'Analyze fit' })).toHaveLength(2)
-    screen.getAllByRole('button', { name: 'Analyze fit' }).forEach((b) => expect(b).toBeEnabled())
+    expect(screen.queryByText('Analyzing your fit…')).not.toBeInTheDocument()
   })
 
   it('sends the search request in the shared data format', async () => {
@@ -158,7 +153,7 @@ describe('App', () => {
     render(<App />)
     await openJobSearch(user)
 
-    await user.click(screen.getByRole('button', { name: 'Search' }))
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
 
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(([url]) => url === '/api/jobs/search')
@@ -166,7 +161,12 @@ describe('App', () => {
       expect(JSON.parse(String(call![1]?.body))).toEqual({
         role: 'Software Engineer Intern',
         location: 'Columbus, OH',
-        remote: true,
+        work_arrangement: 'any',
+        experience_level: 'any',
+        employment_type: 'any',
+        salary_min: null,
+        salary_max: null,
+        industry: '',
       })
     })
   })
@@ -177,8 +177,8 @@ describe('App', () => {
     render(<App />)
     await openJobSearch(user)
 
-    await user.click(screen.getByRole('button', { name: 'Search' }))
-    expect(await screen.findByText(/500 Internal Server Error/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    expect(await screen.findByText(/Search failed: .*500 Internal Server Error/)).toBeInTheDocument()
   })
 
   it('shows the backend error message and request id when fit analysis fails', async () => {
@@ -191,10 +191,10 @@ describe('App', () => {
     render(<App />)
     await openJobSearch(user)
 
-    await user.click(screen.getByRole('button', { name: 'Search' }))
-    await user.click(await screen.findByRole('button', { name: 'Analyze fit' }))
-
-    expect(await screen.findByText('Error: Aivana returned an invalid response (request req_42)')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    expect(
+      await screen.findByText("Couldn't analyze this job: Error: Aivana returned an invalid response (request req_42)"),
+    ).toBeInTheDocument()
   })
 
   it('falls back to the status line when the error body is not JSON', async () => {
@@ -203,10 +203,8 @@ describe('App', () => {
     render(<App />)
     await openJobSearch(user)
 
-    await user.click(screen.getByRole('button', { name: 'Search' }))
-    await user.click(await screen.findByRole('button', { name: 'Analyze fit' }))
-
-    expect(await screen.findByText('Error: 502 Bad Gateway')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    expect(await screen.findByText("Couldn't analyze this job: Error: 502 Bad Gateway")).toBeInTheDocument()
   })
 
   it('runs a question -> answer -> feedback round trip', async () => {
