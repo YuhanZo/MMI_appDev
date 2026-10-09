@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
+  toUserProfile,
   MOCK_CAREER_PROFILE,
   PROFILE_STORAGE_KEY,
   loadCareerProfile,
@@ -36,5 +37,13 @@ describe('profileStorage', () => {
 
     localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ name: 'Incomplete' }))
     expect(loadCareerProfile()).toEqual(MOCK_CAREER_PROFILE)
+  })
+
+  it('maps a career profile to the shared UserProfile format', () => {
+    expect(toUserProfile(MOCK_CAREER_PROFILE)).toEqual({
+      skills: ['Python', 'Java', 'React'],
+      education: 'BS Computer Science, The Ohio State University, class of 2027',
+      experience: 'Entry Level. Backend and web development project experience.',
+    })
   })
 })

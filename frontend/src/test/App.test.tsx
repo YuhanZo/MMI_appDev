@@ -2,6 +2,7 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../App'
+import { MOCK_CAREER_PROFILE } from '../features/profile/profileStorage'
 
 const JOB = {
   id: 'job_001',
@@ -145,6 +146,29 @@ describe('App', () => {
     finish({ summary: 'Done.', strengths: [], gaps: [], recommendations: [] })
     expect(await screen.findByText('Done.')).toBeInTheDocument()
     expect(screen.queryByText('Analyzing your fit…')).not.toBeInTheDocument()
+  })
+
+  it('sends the saved profile with the fit analysis request', async () => {
+    localStorage.setItem(
+      'mmi-career-profile',
+      JSON.stringify({ ...MOCK_CAREER_PROFILE, skills: ['Go', 'SQL'], experienceSummary: 'Two data internships.' }),
+    )
+    const fetchMock = mockApi()
+    const user = userEvent.setup()
+    render(<App />)
+    await openJobSearch(user)
+
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    await waitFor(() => {
+      const call = fetchMock.mock.calls.find(([url]) => url === '/api/jobs/fit-analysis')
+      expect(call).toBeDefined()
+      expect(JSON.parse(String(call![1]?.body)).user_profile).toEqual({
+        skills: ['Go', 'SQL'],
+        education: 'BS Computer Science, The Ohio State University, class of 2027',
+        experience: 'Entry Level. Two data internships.',
+      })
+    })
+    localStorage.clear()
   })
 
   it('sends the search request in the shared data format', async () => {

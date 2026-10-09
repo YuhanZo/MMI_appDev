@@ -1,6 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react'
 import * as api from '../../api'
 import { Icon } from '../../icons'
+import { loadCareerProfile, toUserProfile } from '../profile/profileStorage'
 import type {
   EmploymentType,
   ExperienceLevel,
@@ -9,12 +10,6 @@ import type {
   JobSearchRequest,
   WorkArrangement,
 } from '../../types'
-
-const DEMO_PROFILE = {
-  skills: ['Python', 'Java', 'React'],
-  education: 'BS Computer Science',
-  experience: 'Backend and web development project experience.',
-}
 
 const DEFAULT_FILTERS: JobSearchRequest = {
   role: 'Software Engineer Intern',
@@ -78,7 +73,8 @@ function useJobSearch() {
     setFitError('')
     setAnalyzing(true)
     try {
-      const result = await api.fitAnalysis({ job, user_profile: DEMO_PROFILE })
+      // Read at call time, so edits saved on the Profile page apply to the next analysis.
+      const result = await api.fitAnalysis({ job, user_profile: toUserProfile(loadCareerProfile()) })
       if (pendingId.current === job.id) setFit(result)
     } catch (e) {
       if (pendingId.current === job.id) setFitError(`Couldn't analyze this job: ${String(e)}`)

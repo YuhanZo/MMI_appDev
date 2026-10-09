@@ -197,7 +197,7 @@ drift apart.
 
 ```bash
 cd backend && .venv/bin/pytest          # 48 tests
-cd frontend && npm test                 # 27 tests
+cd frontend && npm test                 # 29 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`
@@ -281,8 +281,9 @@ call JSearch: `conftest.py` forces mock mode and fails on any real request.
 
 - Only fit analysis uses Aivana; interview questions and feedback are still canned.
 - Mock job search only filters by role; the other filters apply with JSearch.
-- No auth. `search_logs.user_id` is nullable and always null; the frontend
-  uses a hard-coded demo profile.
+- No auth. `search_logs.user_id` is nullable and always null. The profile is
+  saved in the browser (localStorage), not the database; fit analysis sends
+  its skills, education and experience.
 - `FitAnalysisResult` has no `match_score`, though the proposal's success
   criteria and UI mockup both call for one.
 - Tables are created via `create_all`; move to Alembic once the schema settles.

@@ -1,3 +1,5 @@
+import type { UserProfile } from '../../types'
+
 export const PROFILE_STORAGE_KEY = 'mmi-career-profile'
 
 export const WORK_ARRANGEMENTS = ['Remote', 'Hybrid', 'On-site'] as const
@@ -93,4 +95,16 @@ export function loadCareerProfile(): CareerProfile {
 
 export function saveCareerProfile(profile: CareerProfile): void {
   localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
+}
+
+/** The subset the API's UserProfile (shared data format) carries, for fit analysis. */
+export function toUserProfile(profile: CareerProfile): UserProfile {
+  const school = [profile.university, profile.graduationYear && `class of ${profile.graduationYear}`]
+    .filter(Boolean)
+    .join(', ')
+  return {
+    skills: [...profile.skills],
+    education: [profile.major, school].filter(Boolean).join(', '),
+    experience: [profile.experienceLevel, profile.experienceSummary].filter(Boolean).join('. '),
+  }
 }
