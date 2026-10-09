@@ -154,8 +154,9 @@ Both default to canned data, and the interview is still canned, in
     ├── vite.config.ts         /api proxy + Vitest config
     └── src/
         ├── main.tsx           React entry
-        ├── App.tsx            top bar, sidebar, Home, Job Search (search form +
-        │                      results), Profile, Behavioral and Technical interview views
+        ├── App.tsx            shell: top bar, account menu, sidebar, Home, and which
+        │                      view is showing
+        ├── features/jobs      job search form + filters, result cards, fit panel
         ├── features/interview setup, five-question session, feedback,
         │                      completion and summary components
         ├── features/profile   editable profile page, saved in the browser
