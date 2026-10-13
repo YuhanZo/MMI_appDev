@@ -1,0 +1,42 @@
+.career-profile-page { max-width: 1120px; margin: 0 auto; }
+.career-profile-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+.career-profile-heading h1 { margin-bottom: 2px; }
+.career-profile-eyebrow, .career-profile-card-kicker { margin: 0 0 3px; color: var(--accent); font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.career-profile-intro, .career-profile-helper { margin: 0; color: var(--text-2); }
+.career-profile-actions { display: flex; gap: 8px; padding-top: 8px; }
+.career-profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.career-profile-card { min-width: 0; padding: 22px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-2); }
+.career-profile-card-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.career-profile-card h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.career-profile-avatar { width: 52px; height: 52px; font-size: 16px; }
+.career-profile-identity { display: flex; flex-direction: column; margin-bottom: 18px; }
+.career-profile-identity strong { font-size: 20px; }
+.career-profile-identity span { color: var(--text-2); }
+.career-profile-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.career-profile-detail { min-width: 0; padding: 12px; border-radius: 10px; background: var(--surface); }
+.career-profile-detail span { display: block; margin-bottom: 3px; color: var(--text-2); font-size: 12px; }
+.career-profile-detail strong { display: block; overflow-wrap: anywhere; font-weight: 500; }
+.career-profile-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.career-profile-form-grid > label, .career-profile-full-field { display: flex; flex-direction: column; gap: 6px; color: var(--text-2); font-size: 12px; font-weight: 500; }
+.career-profile-form-grid input, .career-profile-form-grid select, .career-profile-full-field textarea, .career-profile-add-skill input { box-sizing: border-box; width: 100%; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 9px 11px; }
+.career-profile-form-grid input, .career-profile-form-grid select { height: 40px; }
+.career-profile-full-field { margin-top: 18px; }
+.career-profile-full-field textarea { resize: vertical; line-height: 1.5; }
+.career-profile-skills { display: flex; flex-wrap: wrap; gap: 8px; }
+.career-profile-skill, .career-profile-priorities span { display: inline-flex; align-items: center; gap: 5px; padding: 7px 11px; border-radius: 999px; background: var(--active-bg); color: var(--active-text); font-weight: 500; }
+.career-profile-skill button { display: grid; place-items: center; width: 19px; height: 19px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; font-size: 18px; line-height: 1; }
+.career-profile-skill button:hover { background: rgba(128,128,128,.18); }
+.career-profile-add-skill { display: flex; gap: 8px; margin-top: 12px; }
+.career-profile-add-skill input { flex: 1; min-width: 0; }
+.career-profile-summary { margin: 18px 0 0; color: var(--text-2); line-height: 1.6; }
+.career-profile-arrangements { grid-column: 1 / -1; margin: 0; padding: 0; border: 0; }
+.career-profile-arrangements legend { margin-bottom: 7px; color: var(--text-2); font-size: 12px; font-weight: 500; }
+.career-profile-arrangements > div, .career-profile-priorities { display: flex; flex-wrap: wrap; gap: 8px; }
+.career-profile-arrangements label, .career-profile-priorities label { display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); cursor: pointer; }
+.career-profile-arrangements label.selected, .career-profile-priorities label.selected { border-color: var(--accent); background: var(--active-bg); color: var(--active-text); }
+.career-profile-arrangements input, .career-profile-priorities input { accent-color: var(--accent); }
+.career-profile-priorities label:has(input:disabled) { cursor: not-allowed; opacity: .5; }
+.career-profile-count { flex-shrink: 0; padding: 4px 9px; border-radius: 999px; background: var(--surface); color: var(--text-2); font-size: 12px; }
+.career-profile-helper { margin: -8px 0 14px; font-size: 13px; }
+@media (max-width: 900px) { .career-profile-grid { grid-template-columns: 1fr; } }
+@media (max-width: 560px) { .career-profile-heading { flex-direction: column; } .career-profile-actions { width: 100%; } .career-profile-actions button { flex: 1; } .career-profile-form-grid, .career-profile-details { grid-template-columns: 1fr; } .career-profile-card { padding: 18px; } }

@@ -1,7 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../App'
+import { MOCK_CAREER_PROFILE } from '../features/profile/profileStorage'
 
 const JOB = {
   id: 'job_001',
@@ -13,9 +14,15 @@ const JOB = {
 }
 
 const QUESTION = {
-  id: 'q1',
+  id: 'behavioral-1',
   question: 'Tell me about a challenging software project.',
   type: 'behavioral' as const,
+}
+
+const TECHNICAL_QUESTION = {
+  id: 'technical-1',
+  question: 'How would you design a REST API for job search?',
+  type: 'technical' as const,
 }
 
 /** A non-2xx reply; `body` undefined means the body isn't JSON. */
@@ -31,6 +38,11 @@ class HttpReply {
   }
 }
 
+/** The app opens on Home; job-search tests go to the Job Search view first. */
+async function openJobSearch(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Job Search' }))
+}
+
 /** Routes each API path to a canned response so tests never need a live backend. */
 function mockApi(overrides: Record<string, unknown> = {}) {
   const routes: Record<string, unknown> = {
@@ -42,11 +54,21 @@ function mockApi(overrides: Record<string, unknown> = {}) {
       gaps: ['Limited AWS experience'],
       recommendations: ['Review basic AWS services'],
     },
-    '/api/interview/questions': [QUESTION],
+    '/api/interview/questions': [QUESTION, TECHNICAL_QUESTION],
+    '/api/interview/questions?mode=behavioral': [QUESTION],
+    '/api/interview/questions?mode=technical': [TECHNICAL_QUESTION],
     '/api/interview/feedback': {
       summary: 'Overall feedback.',
       strengths: ['Clear explanation'],
       improvements: ['Add measurable results'],
+    },
+    '/api/interview/detailed-feedback': {
+      mode: 'behavioral',
+      ai_feedback: 'Overall feedback.',
+      strengths: ['Clear explanation'],
+      areas_to_improve: ['Add measurable results'],
+      star_structure: 'Use a clearer result.',
+      improved_answer: 'I led a project and measured the outcome.',
     },
     ...overrides,
   }
@@ -77,6 +99,7 @@ function mockApi(overrides: Record<string, unknown> = {}) {
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
+  localStorage.clear()
 })
 
 describe('App', () => {
@@ -92,48 +115,82 @@ describe('App', () => {
     expect(await screen.findByText(/backend unreachable/)).toBeInTheDocument()
   })
 
-  it('renders search results and then a fit analysis', async () => {
+  it('renders search results and analyzes the top result', async () => {
     mockApi()
     const user = userEvent.setup()
     render(<App />)
+    await openJobSearch(user)
 
-    await user.click(screen.getByRole('button', { name: 'Search' }))
-    expect(await screen.findByText('Software Engineer Intern')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    const results = await screen.findByRole('list', { name: 'Job results' })
+    expect(within(results).getByText('Software Engineer Intern')).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Analyze fit' }))
+    // The top result is analyzed right away.
     expect(await screen.findByText('Overall fit summary.')).toBeInTheDocument()
     expect(screen.getByText(/Strong Python experience/)).toBeInTheDocument()
   })
 
-  it('shows Analyzing… and blocks other analyses while one runs', async () => {
+  it('shows "Analyzing your fit…" and marks the selected card while the analysis runs', async () => {
     let finish!: (v: unknown) => void
     const pending = new Promise((resolve) => (finish = resolve))
-    mockApi({
-      '/api/jobs/search': [JOB, { ...JOB, id: 'job_002', title: 'Frontend Developer Intern' }],
-      '/api/jobs/fit-analysis': pending,
-    })
+    mockApi({ '/api/jobs/fit-analysis': pending })
     const user = userEvent.setup()
     render(<App />)
+    await openJobSearch(user)
 
-    await user.click(screen.getByRole('button', { name: 'Search' }))
-    const [first] = await screen.findAllByRole('button', { name: 'Analyze fit' })
-    await user.click(first)
-
-    expect(screen.getByRole('button', { name: 'Analyzing…' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Analyze fit' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    expect(await screen.findByText('Analyzing your fit…')).toBeInTheDocument()
+    const results = screen.getByRole('list', { name: 'Job results' })
+    expect(within(results).getByRole('button', { pressed: true })).toBeInTheDocument()
 
     finish({ summary: 'Done.', strengths: [], gaps: [], recommendations: [] })
     expect(await screen.findByText('Done.')).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: 'Analyze fit' })).toHaveLength(2)
-    screen.getAllByRole('button', { name: 'Analyze fit' }).forEach((b) => expect(b).toBeEnabled())
+    expect(screen.queryByText('Analyzing your fit…')).not.toBeInTheDocument()
+  })
+
+  it('sends the saved profile with the fit analysis request', async () => {
+    localStorage.setItem(
+      'mmi-career-profile',
+      JSON.stringify({ ...MOCK_CAREER_PROFILE, skills: ['Go', 'SQL'], experienceSummary: 'Two data internships.' }),
+    )
+    const fetchMock = mockApi()
+    const user = userEvent.setup()
+    render(<App />)
+    await openJobSearch(user)
+
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    await waitFor(() => {
+      const call = fetchMock.mock.calls.find(([url]) => url === '/api/jobs/fit-analysis')
+      expect(call).toBeDefined()
+      expect(JSON.parse(String(call![1]?.body)).user_profile).toEqual({
+        skills: ['Go', 'SQL'],
+        education: 'BS Computer Science, The Ohio State University, class of 2027',
+        experience: 'Entry Level. Two data internships.',
+      })
+    })
+    localStorage.clear()
+  })
+
+  it('starts a behavioral interview for the job from "Practice interview"', async () => {
+    mockApi()
+    const user = userEvent.setup()
+    render(<App />)
+    await openJobSearch(user)
+
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    await user.click(await screen.findByRole('button', { name: /Practice interview/ }))
+
+    expect(await screen.findByText('Example Company · Software Engineer Intern')).toBeInTheDocument()
+    expect(await screen.findByText(/Tell me about a challenging software project/)).toBeInTheDocument()
   })
 
   it('sends the search request in the shared data format', async () => {
     const fetchMock = mockApi()
     const user = userEvent.setup()
     render(<App />)
+    await openJobSearch(user)
 
-    await user.click(screen.getByRole('button', { name: 'Search' }))
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
 
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(([url]) => url === '/api/jobs/search')
@@ -141,7 +198,12 @@ describe('App', () => {
       expect(JSON.parse(String(call![1]?.body))).toEqual({
         role: 'Software Engineer Intern',
         location: 'Columbus, OH',
-        remote: true,
+        work_arrangement: 'any',
+        experience_level: 'any',
+        employment_type: 'any',
+        salary_min: null,
+        salary_max: null,
+        industry: '',
       })
     })
   })
@@ -150,9 +212,10 @@ describe('App', () => {
     mockApi({ '/api/jobs/search': new Error('500 Internal Server Error') })
     const user = userEvent.setup()
     render(<App />)
+    await openJobSearch(user)
 
-    await user.click(screen.getByRole('button', { name: 'Search' }))
-    expect(await screen.findByText(/500 Internal Server Error/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    expect(await screen.findByText(/Search failed: .*500 Internal Server Error/)).toBeInTheDocument()
   })
 
   it('shows the backend error message and request id when fit analysis fails', async () => {
@@ -163,22 +226,22 @@ describe('App', () => {
     })
     const user = userEvent.setup()
     render(<App />)
+    await openJobSearch(user)
 
-    await user.click(screen.getByRole('button', { name: 'Search' }))
-    await user.click(await screen.findByRole('button', { name: 'Analyze fit' }))
-
-    expect(await screen.findByText('Error: Aivana returned an invalid response (request req_42)')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    expect(
+      await screen.findByText("Couldn't analyze this job: Error: Aivana returned an invalid response (request req_42)"),
+    ).toBeInTheDocument()
   })
 
   it('falls back to the status line when the error body is not JSON', async () => {
     mockApi({ '/api/jobs/fit-analysis': new HttpReply(502, 'Bad Gateway') })
     const user = userEvent.setup()
     render(<App />)
+    await openJobSearch(user)
 
-    await user.click(screen.getByRole('button', { name: 'Search' }))
-    await user.click(await screen.findByRole('button', { name: 'Analyze fit' }))
-
-    expect(await screen.findByText('Error: 502 Bad Gateway')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    expect(await screen.findByText("Couldn't analyze this job: Error: 502 Bad Gateway")).toBeInTheDocument()
   })
 
   it('runs a question -> answer -> feedback round trip', async () => {
@@ -186,30 +249,40 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.click(screen.getByRole('button', { name: 'Mock Interview' }))
+    await user.click(screen.getByRole('button', { name: 'Behavioral Interview' }))
+    const setup = screen.getByRole('region', { name: 'Behavioral Interview Setup' })
+    await user.type(within(setup).getByLabelText('Company'), 'Aivana')
+    await user.type(within(setup).getByLabelText('Position / Job Title'), 'Engineer')
+    await user.click(within(setup).getByRole('button', { name: 'Start Interview' }))
     expect(await screen.findByText(/Tell me about a challenging software project/)).toBeInTheDocument()
 
-    await user.type(screen.getByLabelText('Your answer'), 'I led a project that...')
-    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
+    await user.type(screen.getByLabelText('Your Answer'), 'I led a project that...')
+    await user.click(screen.getByRole('button', { name: 'Submit Answer' }))
 
     expect(await screen.findByText(/Overall feedback\./)).toBeInTheDocument()
   })
 
-  it('keeps each question’s answer separate', async () => {
-    mockApi({
-      '/api/interview/questions': [
-        QUESTION,
-        { id: 'q2', question: 'How would you design a REST API for job search?', type: 'technical' },
-      ],
-    })
+  it('opens the technical setup from its navigation item', async () => {
+    mockApi()
     const user = userEvent.setup()
     render(<App />)
 
-    await user.click(screen.getByRole('button', { name: 'Mock Interview' }))
-    const [first, second] = await screen.findAllByLabelText('Your answer')
-    await user.type(first, 'Only for the first question')
+    await user.click(screen.getByRole('button', { name: 'Technical Interview' }))
+    expect(screen.getByRole('heading', { name: 'Technical Interview Setup' })).toBeInTheDocument()
+  })
 
-    expect(first).toHaveValue('Only for the first question')
-    expect(second).toHaveValue('')
+  it('opens the enhanced profile from the existing account menu', async () => {
+    mockApi()
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Account menu' }))
+    await user.click(screen.getByRole('menuitem', { name: 'My Profile' }))
+
+    expect(screen.getByRole('heading', { name: 'About Me' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Skills & Experience' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Career Preferences' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Career Priorities' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Edit Profile' })).toBeInTheDocument()
   })
 })
