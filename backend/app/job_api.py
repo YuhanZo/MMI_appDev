@@ -4,8 +4,7 @@ Only the backend calls this, so the API key never reaches the browser.
 
 Some filters are sent to JSearch as parameters (employment type, experience,
 remote). The ones JSearch can't filter on (hybrid, on-site, salary range) are
-applied here after the results come back. Raw results are cached on disk for
-a day, so changing only a post-filter (like salary) doesn't use a request.
+applied here after the results come back
 """
 
 import hashlib
@@ -18,7 +17,7 @@ import httpx
 
 JSEARCH_URL = "https://api.openwebninja.com/jsearch/search-v2"
 CACHE_DIR = Path(__file__).resolve().parent.parent / ".job_cache"
-CACHE_VERSION = "v2"  # bump when the cached format changes, so old files are ignored
+CACHE_VERSION = "v2"  
 CACHE_TTL_SECONDS = 24 * 60 * 60
 
 EMPLOYMENT_TYPES = {
@@ -36,7 +35,6 @@ EXPERIENCE_REQUIREMENTS = {
     "senior": "more_than_3_years_experience",
 }
 
-# Multipliers that turn a listed salary into a yearly amount.
 PERIODS_PER_YEAR = {"HOUR": 2080, "DAY": 260, "WEEK": 52, "MONTH": 12, "YEAR": 1}
 
 
@@ -96,7 +94,7 @@ def yearly_salary(raw: dict[str, Any]) -> tuple[float | None, float | None]:
 def salary_matches(raw: dict[str, Any], salary_min: int | None, salary_max: int | None) -> bool:
     low, high = yearly_salary(raw)
     if low is None and high is None:
-        return True  # Most postings don't list pay; keep them rather than hide them.
+        return True  # Most postings don't list pay; we don't want to exclude them unless the user has a filter
     low = low if low is not None else high
     high = high if high is not None else low
     if salary_min is not None and high < salary_min:
@@ -107,13 +105,13 @@ def salary_matches(raw: dict[str, Any], salary_min: int | None, salary_max: int 
 
 
 def arrangement_matches(raw: dict[str, Any], work_arrangement: str) -> bool:
-    if work_arrangement in ("any", "remote"):  # remote is filtered by JSearch itself
+    if work_arrangement in ("any", "remote"):  # remote is filtered by JSearch
         return True
     listed = str(raw.get("work_arrangement") or "").lower()
     if work_arrangement == "hybrid":
         text = " ".join(str(raw.get(k) or "") for k in ("job_title", "job_description")).lower()
         return "hybrid" in listed or "hybrid" in text
-    # on-site
+    # on site
     return not raw.get("job_is_remote") and "remote" not in listed and "hybrid" not in listed
 
 
@@ -154,7 +152,7 @@ def to_job(raw: dict[str, Any]) -> dict[str, str] | None:
 def extract_listings(body: Any) -> list[dict[str, Any]]:
     """Pull the raw listings out of a JSearch response, whichever shape it uses."""
     data = body.get("data") if isinstance(body, dict) else None
-    if isinstance(data, dict):  # search-v2 may nest listings next to a paging cursor
+    if isinstance(data, dict):  
         data = data.get("jobs")
     if not isinstance(data, list):
         return []

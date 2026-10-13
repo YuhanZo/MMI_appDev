@@ -1,42 +1,31 @@
-.interview-workspace {
-  --interview-ink: #172033;
-  --interview-muted: #637083;
-  --interview-line: #d9e1ea;
-  --interview-accent: #2563eb;
-  --interview-accent-strong: #1d4ed8;
-  --interview-accent-soft: #eaf1ff;
-  --interview-surface: #ffffff;
-  --interview-surface-muted: #f1f5f9;
-  --interview-success: #0f766e;
-  --interview-shadow: 0 18px 50px rgba(23, 32, 51, 0.08);
-  color: var(--interview-ink);
-}
-
+/* Page header */
 .interview-page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 24px;
+  gap: var(--aivana-space-6);
+  margin-bottom: var(--aivana-space-6);
 }
 
 .interview-page-header h1 {
-  margin: 8px 0;
-  font-size: clamp(30px, 4vw, 48px);
-  line-height: 1.04;
+  margin: var(--aivana-space-1) 0 var(--aivana-space-2);
+  font-size: clamp(26px, 3vw, 32px);
+  line-height: 1.15;
 }
 
 .interview-page-header p {
   max-width: 700px;
   margin: 0;
-  color: var(--interview-muted);
-  line-height: 1.7;
+  color: var(--aivana-color-text-secondary);
+  line-height: 1.6;
 }
 
-.interview-eyebrow {
-  color: var(--interview-accent) !important;
+.interview-page-header .interview-eyebrow {
+  margin: 0;
+  color: var(--aivana-color-action-link);
+  font-family: var(--aivana-font-mono);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -44,32 +33,32 @@
 .interview-header-meta {
   display: grid;
   min-width: 240px;
-  gap: 10px;
+  gap: var(--aivana-space-3);
 }
 
+/* Panel */
 .interview-status-card,
 .interview-panel {
-  border: 1px solid var(--interview-line);
-  border-radius: 10px;
-  background: var(--interview-surface);
-  box-shadow: var(--interview-shadow);
+  border: 1px solid var(--aivana-color-border-hairline);
+  border-radius: var(--aivana-radius-lg);
+  background: var(--aivana-color-surface-card);
 }
 
 .interview-status-card {
-  padding: 18px;
+  padding: var(--aivana-space-4);
 }
 
 .interview-status-card span {
   display: block;
-  color: var(--interview-muted);
-  font-size: 13px;
-  font-weight: 700;
+  color: var(--aivana-color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .interview-status-card strong {
   display: block;
-  margin-top: 6px;
-  font-size: 18px;
+  margin-top: var(--aivana-space-1);
+  font-size: 16px;
 }
 
 .interview-setup-panel,
@@ -77,39 +66,41 @@
 .interview-feedback-panel,
 .interview-summary-panel,
 .interview-completion-panel {
-  padding: 24px;
+  padding: var(--aivana-space-6);
 }
 
 .interview-section-title {
-  margin: 0 0 10px;
-  font-size: 22px;
+  margin: 0 0 var(--aivana-space-3);
+  font-size: 20px;
+  font-weight: 600;
 }
 
 .interview-muted,
-.interview-feedback-empty,
+.interview-feedback-empty p,
 .interview-summary-panel > p,
 .interview-completion-panel > p {
-  color: var(--interview-muted);
-  line-height: 1.7;
+  color: var(--aivana-color-text-secondary);
+  line-height: 1.6;
 }
 
+/* Fields */
 .interview-setup-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-  margin-top: 20px;
+  gap: var(--aivana-space-4);
+  margin-top: var(--aivana-space-4);
 }
 
 .interview-field {
   display: grid;
-  gap: 8px;
+  gap: var(--aivana-space-2);
 }
 
 .interview-field label,
 .interview-control-label {
-  color: var(--interview-ink);
+  color: var(--aivana-color-text-primary);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .interview-field input,
@@ -117,38 +108,53 @@
 .interview-field textarea {
   box-sizing: border-box;
   width: 100%;
-  border: 1px solid var(--interview-line);
-  border-radius: 8px;
-  color: var(--interview-ink);
-  background: #fff;
-  outline: none;
+  border: 1px solid var(--aivana-color-border-control);
+  border-radius: var(--aivana-radius-md);
+  background: var(--aivana-color-surface-field);
+  color: var(--aivana-color-text-primary);
 }
 
 .interview-field input,
 .interview-field select {
-  min-height: 46px;
-  padding: 0 14px;
+  min-height: var(--aivana-touch-preferred);
+  padding: 0 var(--aivana-space-3);
 }
 
 .interview-field textarea {
   min-height: 180px;
-  padding: 14px;
+  padding: var(--aivana-space-3);
   line-height: 1.6;
   resize: vertical;
 }
 
-.interview-field input:focus,
-.interview-field select:focus,
-.interview-field textarea:focus {
-  border-color: var(--interview-accent);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+.interview-field input::placeholder,
+.interview-field textarea::placeholder {
+  color: var(--aivana-color-text-placeholder);
 }
 
+.interview-field input:focus-visible,
+.interview-field select:focus-visible,
+.interview-field textarea:focus-visible {
+  outline: var(--aivana-focus-ring);
+  outline-offset: 0;
+}
+
+.interview-field .interview-code-editor {
+  min-height: 240px;
+  font-family: var(--aivana-font-mono);
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  tab-size: 4;
+}
+
+/* Buttons */
 .interview-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 22px;
+  gap: var(--aivana-space-3);
+  margin-top: var(--aivana-space-6);
 }
 
 .interview-primary-button,
@@ -156,50 +162,60 @@
 .interview-ghost-button,
 .interview-answer-type-button {
   display: inline-flex;
-  min-height: 42px;
   align-items: center;
   justify-content: center;
-  padding: 0 16px;
+  gap: 6px;
+  min-height: var(--aivana-touch-preferred);
+  padding: 0 var(--aivana-space-4);
   border: 1px solid transparent;
-  border-radius: 8px;
-  font-weight: 700;
-  transition: background 160ms ease, border-color 160ms ease, transform 160ms ease;
+  border-radius: var(--aivana-radius-md);
+  font-weight: 600;
+  transition: background-color var(--aivana-motion-fast), border-color var(--aivana-motion-fast);
 }
 
 .interview-primary-button {
-  color: #fff;
-  background: var(--interview-accent);
+  background: var(--aivana-color-action-primary);
+  color: var(--aivana-color-action-primary-foreground);
 }
 
 .interview-primary-button:hover:not(:disabled) {
-  background: var(--interview-accent-strong);
-  transform: translateY(-1px);
+  background: var(--aivana-color-action-primary-hover);
 }
 
 .interview-secondary-button,
 .interview-ghost-button,
 .interview-answer-type-button {
-  color: var(--interview-ink);
-  border-color: var(--interview-line);
-  background: var(--interview-surface);
+  border-color: var(--aivana-color-border-control);
+  background: var(--aivana-color-surface-card);
+  color: var(--aivana-color-text-primary);
+}
+
+.interview-ghost-button {
+  color: var(--aivana-color-action-link);
 }
 
 .interview-secondary-button:hover:not(:disabled),
 .interview-ghost-button:hover,
 .interview-answer-type-button:hover {
-  background: var(--interview-surface-muted);
+  background: var(--aivana-color-surface-row);
 }
 
 .interview-primary-button:disabled,
 .interview-secondary-button:disabled {
   cursor: not-allowed;
-  opacity: 0.55;
+  opacity: 0.6;
+}
+
+.interview-answer-type-button.active {
+  border-color: var(--aivana-color-action-link);
+  background: var(--aivana-status-info-bg);
+  color: var(--aivana-status-info-text);
 }
 
 .interview-session-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
-  gap: 20px;
+  gap: var(--aivana-space-4);
 }
 
 .interview-feedback-panel {
@@ -209,128 +225,116 @@
 .interview-context-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 18px;
+  gap: var(--aivana-space-2);
+  margin-bottom: var(--aivana-space-4);
 }
 
 .interview-pill {
   display: inline-flex;
-  min-height: 32px;
   align-items: center;
-  padding: 0 10px;
-  border: 1px solid var(--interview-line);
-  border-radius: 999px;
-  color: var(--interview-muted);
-  background: var(--interview-surface-muted);
+  min-height: 32px;
+  padding: 0 var(--aivana-space-3);
+  border: 1px solid var(--aivana-status-neutral-border);
+  border-radius: var(--aivana-radius-pill);
+  background: var(--aivana-status-neutral-bg);
+  color: var(--aivana-status-neutral-text);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .interview-question-topline {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 14px;
+  gap: var(--aivana-space-4);
+  margin-bottom: var(--aivana-space-3);
 }
 
 .interview-question-count {
   margin: 0;
-  color: var(--interview-accent);
-  font-weight: 800;
+  color: var(--aivana-color-action-link);
+  font-weight: 600;
 }
 
 .interview-progress-track {
   width: 100%;
   max-width: 320px;
-  height: 10px;
+  height: 8px;
   overflow: hidden;
-  border-radius: 999px;
-  background: #e5ebf3;
+  border-radius: var(--aivana-radius-pill);
+  background: var(--aivana-color-border-hairline);
 }
 
 .interview-progress-fill {
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--interview-accent), var(--interview-success));
-  transition: width 220ms ease;
+  background: var(--aivana-color-action-link);
+  transition: width var(--aivana-motion-standard);
 }
 
 .interview-question-text {
-  margin: 0 0 22px;
-  font-size: clamp(24px, 3vw, 34px);
-  line-height: 1.25;
+  margin: 0 0 var(--aivana-space-6);
+  font-size: clamp(20px, 2.4vw, 26px);
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .interview-answer-controls {
   display: grid;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: var(--aivana-space-2);
+  margin-bottom: var(--aivana-space-4);
 }
 
 .interview-answer-type-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-}
-
-.interview-answer-type-button.active {
-  color: var(--interview-accent-strong);
-  border-color: #9bbcff;
-  background: var(--interview-accent-soft);
+  gap: var(--aivana-space-2);
 }
 
 .interview-technical-toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 220px;
   align-items: end;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: var(--aivana-space-4);
+  margin-bottom: var(--aivana-space-4);
 }
 
 .interview-assessment-note {
   margin: 0;
-  padding: 12px 14px;
-  border: 1px solid #fed7aa;
-  border-radius: 8px;
-  color: #7c2d12;
-  background: #fff7ed;
-  font-weight: 700;
-}
-
-.interview-code-editor {
-  min-height: 240px !important;
-  color: #d9e6f2 !important;
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px), #111827 !important;
-  background-size: 48px 100% !important;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
-  font-size: 14px;
-  line-height: 1.7;
+  padding: var(--aivana-space-3) var(--aivana-space-4);
+  border: 1px solid var(--aivana-status-warning-border);
+  border-radius: var(--aivana-radius-md);
+  background: var(--aivana-status-warning-bg);
+  color: var(--aivana-status-warning-text);
+  font-weight: 600;
 }
 
 .interview-error {
-  margin: 14px 0 0;
+  margin: var(--aivana-space-3) 0 0;
   padding: 10px 14px;
-  border-radius: 8px;
-  color: #b42318;
-  background: #fef3f2;
+  border: 1px solid var(--aivana-status-danger-border);
+  border-radius: var(--aivana-radius-md);
+  background: var(--aivana-status-danger-bg);
+  color: var(--aivana-status-danger-text);
 }
 
+/* ---------- Feedback ---------- */
 .interview-feedback-block + .interview-feedback-block {
-  margin-top: 18px;
-  padding-top: 18px;
-  border-top: 1px solid var(--interview-line);
+  margin-top: var(--aivana-space-4);
+  padding-top: var(--aivana-space-4);
+  border-top: 1px solid var(--aivana-color-border-hairline);
 }
 
 .interview-feedback-block h3 {
-  margin: 0 0 8px;
-  font-size: 16px;
+  margin: 0 0 var(--aivana-space-2);
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .interview-feedback-block p,
 .interview-feedback-block li,
 .interview-summary-section li {
-  color: var(--interview-muted);
+  color: var(--aivana-color-text-secondary);
   line-height: 1.6;
 }
 
@@ -346,33 +350,35 @@
 
 .interview-assessment-badge {
   display: inline-flex;
-  min-height: 34px;
   align-items: center;
-  padding: 0 12px;
-  border-radius: 999px;
-  color: #075985;
-  background: #e0f2fe;
-  font-weight: 800;
+  min-height: 32px;
+  padding: 0 var(--aivana-space-3);
+  border: 1px solid var(--aivana-status-info-border);
+  border-radius: var(--aivana-radius-pill);
+  background: var(--aivana-status-info-bg);
+  color: var(--aivana-status-info-text);
+  font-weight: 600;
 }
 
 .interview-completion-panel h2,
 .interview-summary-panel h2 {
-  margin: 0 0 10px;
-  font-size: 28px;
+  margin: 0 0 var(--aivana-space-2);
+  font-size: 24px;
+  font-weight: 600;
 }
 
 .interview-summary-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-  margin-top: 18px;
+  gap: var(--aivana-space-4);
+  margin-top: var(--aivana-space-4);
 }
 
 .interview-summary-section {
-  padding: 18px;
-  border: 1px solid var(--interview-line);
-  border-radius: 8px;
-  background: #fbfcfe;
+  padding: var(--aivana-space-4);
+  border: 1px solid var(--aivana-color-border-hairline);
+  border-radius: var(--aivana-radius-md);
+  background: var(--aivana-color-surface-row);
 }
 
 .interview-summary-section.full {
@@ -380,21 +386,23 @@
 }
 
 .interview-summary-section h3 {
-  margin: 0 0 10px;
+  margin: 0 0 var(--aivana-space-2);
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .interview-result-list {
   display: grid;
-  gap: 10px;
+  gap: var(--aivana-space-2);
   padding: 0 !important;
   list-style: none;
 }
 
 .interview-result-list li {
-  padding: 14px;
-  border: 1px solid var(--interview-line);
-  border-radius: 8px;
-  background: var(--interview-surface);
+  padding: var(--aivana-space-3);
+  border: 1px solid var(--aivana-color-border-hairline);
+  border-radius: var(--aivana-radius-md);
+  background: var(--aivana-color-surface-card);
 }
 
 .interview-result-list strong,
@@ -403,7 +411,8 @@
 }
 
 .interview-result-list strong {
-  margin-bottom: 4px;
+  margin-bottom: var(--aivana-space-1);
+  color: var(--aivana-color-text-primary);
 }
 
 .interview-summary-actions {
@@ -416,7 +425,7 @@
   .interview-setup-grid,
   .interview-summary-grid,
   .interview-technical-toolbar {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .interview-page-header {
@@ -443,7 +452,7 @@
   .interview-feedback-panel,
   .interview-summary-panel,
   .interview-completion-panel {
-    padding: 18px;
+    padding: var(--aivana-space-4);
   }
 
   .interview-actions {

@@ -4,6 +4,7 @@ import type {
   InterviewMode,
   InterviewQuestion,
 } from '../../types'
+import { Icon } from '../../icons'
 import InterviewFeedback from './InterviewFeedback'
 
 interface InterviewSessionProps {
@@ -62,7 +63,14 @@ export default function InterviewSession({
 
         <div className="interview-question-topline">
           <p className="interview-question-count">Question {questionNumber} of {questionCount}</p>
-          <div className="interview-progress-track" aria-label={`Interview progress ${Math.round(progress)} percent`}>
+            <div
+              className="interview-progress-track"
+              role="progressbar"
+              aria-label="Interview progress"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(progress)}
+            >
             <div className="interview-progress-fill" style={{ width: `${progress}%` }} />
           </div>
         </div>
@@ -73,20 +81,24 @@ export default function InterviewSession({
           <div className="interview-answer-controls">
             <span className="interview-control-label">Answer Type</span>
             <div className="interview-answer-type-group" role="group" aria-label="Answer type">
-              <button
-                type="button"
-                className={`interview-answer-type-button${answerType === 'text' ? ' active' : ''}`}
-                onClick={() => onAnswerTypeChange('text')}
-              >
-                Text / Explanation
-              </button>
-              <button
-                type="button"
-                className={`interview-answer-type-button${answerType === 'code' ? ' active' : ''}`}
-                onClick={() => onAnswerTypeChange('code')}
-              >
-                Code
-              </button>
+                <button
+                  type="button"
+                  className={`interview-answer-type-button${answerType === 'text' ? ' active' : ''}`}
+                  aria-pressed={answerType === 'text'}
+                  onClick={() => onAnswerTypeChange('text')}
+                >
+                  {answerType === 'text' && <Icon name="check" size={18} />}
+                  Text / Explanation
+                </button>
+                <button
+                  type="button"
+                  className={`interview-answer-type-button${answerType === 'code' ? ' active' : ''}`}
+                  aria-pressed={answerType === 'code'}
+                  onClick={() => onAnswerTypeChange('code')}
+                >
+                  {answerType === 'code' && <Icon name="check" size={18} />}
+                  Code
+                </button>
             </div>
           </div>
         )}

@@ -23,7 +23,6 @@ async def search_jobs(req: JobSearchRequest, db: Session = Depends(get_db)) -> l
         SearchLog(
             role=req.role,
             location=req.location,
-            # The table predates the new filters; it still records whether the search was remote.
             remote=req.work_arrangement == "remote",
             result_count=len(results),
         )

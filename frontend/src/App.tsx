@@ -9,7 +9,7 @@ import ProfileView from './features/profile/ProfileView'
 import { Icon, type IconName } from './icons'
 import type { InterviewMode } from './types'
 
-// Display-only user info for the account menu (no sign-in yet).
+// Display-only user info for the account menu (no sign-in yet)
 const DEMO_USER = { name: 'Demo User', initials: 'DU' }
 
 type View = 'home' | 'jobs' | 'behavioral' | 'technical' | 'profile'
@@ -65,7 +65,6 @@ function ProfileMenu({ onOpenProfile }: { onOpenProfile: () => void }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  // Close on outside click or Escape.
   useEffect(() => {
     if (!open) return
     function onClick(e: MouseEvent) {
@@ -120,6 +119,51 @@ function ProfileMenu({ onOpenProfile }: { onOpenProfile: () => void }) {
   )
 }
 
+type Theme = 'light' | 'dark'
+const THEME_KEY = 'theme'
+
+function storedTheme(): Theme | null {
+  try {
+    const value = localStorage.getItem(THEME_KEY)
+    return value === 'light' || value === 'dark' ? value : null
+  } catch {
+    return null
+  }
+}
+
+function useTheme() {
+  const [theme, setTheme] = useState<Theme>(() =>
+    document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
+  )
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+  }, [theme])
+
+  // Until the user picks a theme, follow the operating system's setting as it changes
+  useEffect(() => {
+    const query = window.matchMedia?.('(prefers-color-scheme: dark)')
+    if (!query) return
+    const onChange = (e: MediaQueryListEvent) => {
+      if (!storedTheme()) setTheme(e.matches ? 'dark' : 'light')
+    }
+    query.addEventListener('change', onChange)
+    return () => query.removeEventListener('change', onChange)
+  }, [])
+
+  function toggle() {
+    const next: Theme = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    try {
+      localStorage.setItem(THEME_KEY, next)
+    } catch {
+      // Storage can be blocked, the theme still changes for this visit
+    }
+  }
+
+  return { theme, toggle }
+}
+
 export default function App() {
   const [view, setView] = useState<View>('home')
   const [status, setStatus] = useState('checking...')
@@ -127,6 +171,7 @@ export default function App() {
     (InterviewLaunchRequest & { mode: InterviewMode }) | null
   >(null)
   const launchNonce = useRef(0)
+  const { theme, toggle } = useTheme()
 
   useEffect(() => {
     api
@@ -155,12 +200,24 @@ export default function App() {
           <span className="brand-name">Career Assistant</span>
         </div>
 
-        <div className={`status status-${health}`} title={`Backend: ${status}`}>
-          <span className="dot" />
-          <span className="status-label">Backend: {status}</span>
-        </div>
+          <div className="topbar-actions">
+            <div className={`status status-${health}`} title={`Backend: ${status}`}>
+              <span className="dot" />
+              <span className="status-label">Backend: {status}</span>
+            </div>
 
-        <ProfileMenu onOpenProfile={() => setView('profile')} />
+            <button
+            type="button"
+            className="theme-toggle"
+            aria-pressed={theme === 'dark'}
+            onClick={toggle}
+            >
+              <Icon name={theme === 'dark' ? 'dark' : 'light'} size={18} />
+              <span className="theme-toggle-label">Dark mode</span>
+            </button>
+
+            <ProfileMenu onOpenProfile={() => setView('profile')} />
+          </div>
       </header>
 
       <nav className="sidebar" aria-label="Sections">
@@ -178,7 +235,7 @@ export default function App() {
         ))}
       </nav>
 
-      {/* All views stay mounted (just hidden) so switching keeps their state. */}
+      { }
       <main className="panel">
         <section hidden={view !== 'home'}>
           <HomeView onSelect={setView} />
