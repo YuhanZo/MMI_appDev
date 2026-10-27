@@ -74,6 +74,7 @@ def generate(
     prompt: str,
     *,
     output_shape: str | None = None,
+    system: str | None = None,
     effort: str = "low",
     budget: Budget | None = None,
 ) -> dict[str, Any]:
@@ -85,6 +86,8 @@ def generate(
     body: dict[str, Any] = {"prompt": prompt, "effort": effort}
     if output_shape:
         body["output_shape"] = output_shape
+    if system:
+        body["system"] = system
 
     with httpx.Client(
         base_url=settings.aivana_base_url,
