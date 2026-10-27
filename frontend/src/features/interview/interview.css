@@ -465,3 +465,10 @@
     width: 100%;
   }
 }
+
+/* Shown while the AI interviewer is generating feedback (20-40 s in testing). */
+.interview-hint {
+  margin: 0 0 var(--aivana-space-3);
+  color: var(--aivana-color-text-secondary);
+  font-size: 14px;
+}

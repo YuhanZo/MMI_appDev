@@ -200,7 +200,7 @@ export default function InterviewWorkspace({
         </div>
         <div className="interview-header-meta">
           {session.stage !== 'setup' && (
-            <button type="button" className="interview-ghost-button" onClick={resetToSetup}>
+            <button type="button" className="interview-ghost-button" onClick={resetToSetup} disabled={submitting}>
               Back to Interview Setup
             </button>
           )}
