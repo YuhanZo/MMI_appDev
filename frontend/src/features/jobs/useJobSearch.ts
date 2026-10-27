@@ -32,24 +32,54 @@ export function useJobSearch() {
   const [analyzing, setAnalyzing] = useState(false)
   const [fitError, setFitError] = useState('')
 
-  // Id of the job whose analysis is in flight. If the user clicks another card
-  // before a slow response comes back, the stale response is ignored.
-  const pendingId = useRef<string | null>(null)
+  // Key of the analysis the panel is waiting for. A response for any other key --
+  // another job, or the same job with older content or an older profile -- is stale
+  // and ignored.
+  const pendingKey = useRef<string | null>(null)
+
+  // Finished analyses, keyed by the exact request sent (the whole job + profile). Each
+  // live analysis is a rate-limited Aivana call (20/min), so re-opening a job reuses
+  // its result; if anything sent would differ -- an edited profile, or a job whose
+  // title/description changed under the same id -- the key differs and the job is
+  // analyzed again. Failures aren't stored, so clicking again retries.
+  const analyses = useRef(new Map<string, FitAnalysisResult>())
+  // Requests still running, by the same key: clicking a job again while it is being
+  // analyzed joins that request instead of starting (and paying for) another.
+  const inFlight = useRef(new Map<string, Promise<FitAnalysisResult>>())
 
   async function analyze(job: Job) {
-    pendingId.current = job.id
     setSelected(job)
-    setFit(null)
     setFitError('')
+
+    // Read at call time, so edits saved on the Profile page apply to the next analysis.
+    const request = { job, user_profile: toUserProfile(loadCareerProfile()) }
+    const key = JSON.stringify(request)
+    pendingKey.current = key
+
+    const cached = analyses.current.get(key)
+    if (cached) {
+      setFit(cached)
+      setAnalyzing(false)
+      return
+    }
+
+    setFit(null)
     setAnalyzing(true)
+    let running = inFlight.current.get(key)
+    if (!running) {
+      running = api.fitAnalysis(request)
+      inFlight.current.set(key, running)
+      running
+        .then((result) => analyses.current.set(key, result), () => {}) // failures aren't stored
+        .finally(() => inFlight.current.delete(key))
+    }
     try {
-      // Read at call time, so edits saved on the Profile page apply to the next analysis.
-      const result = await api.fitAnalysis({ job, user_profile: toUserProfile(loadCareerProfile()) })
-      if (pendingId.current === job.id) setFit(result)
+      const result = await running
+      if (pendingKey.current === key) setFit(result)
     } catch (e) {
-      if (pendingId.current === job.id) setFitError(`Couldn't analyze this job: ${String(e)}`)
+      if (pendingKey.current === key) setFitError(`Couldn't analyze this job: ${String(e)}`)
     } finally {
-      if (pendingId.current === job.id) setAnalyzing(false)
+      if (pendingKey.current === key) setAnalyzing(false)
     }
   }
 
@@ -59,7 +89,7 @@ export function useJobSearch() {
       return
     }
 
-    pendingId.current = null
+    pendingKey.current = null
     setSearchError('')
     setSelected(null)
     setFit(null)

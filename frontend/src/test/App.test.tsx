@@ -74,8 +74,9 @@ function mockApi(overrides: Record<string, unknown> = {}) {
   }
 
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-    void init
-    const body = routes[url]
+    // A function route answers each call separately (e.g. a different reply per call).
+    const route = routes[url]
+    const body = typeof route === 'function' ? route(init) : route
     if (body === undefined) throw new Error(`unmocked route: ${url}`)
     if (body instanceof Error) throw body
     if (body instanceof HttpReply) {
@@ -293,6 +294,104 @@ describe('App', () => {
         .map(([, init]) => JSON.parse(String(init?.body)))
       expect(bodies[bodies.length - 1].job.id).toBe('job_002')
     })
+  })
+
+  it('reuses a finished analysis instead of asking Aivana again', async () => {
+    const second = { ...JOB, id: 'job_002', title: 'Data Analyst Intern', company: 'Other Company' }
+    const fetchMock = mockApi({ '/api/jobs/search': [JOB, second] })
+    const fitCalls = () => fetchMock.mock.calls.filter(([url]) => url === '/api/jobs/fit-analysis').length
+    const user = userEvent.setup()
+    render(<App />)
+    await openJobSearch(user)
+
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    const list = await screen.findByRole('list', { name: 'Job results' })
+    await screen.findByText('Overall fit summary.') // first job analyzed automatically
+    await user.click(within(list).getByRole('button', { name: /Data Analyst Intern/ }))
+    await waitFor(() => expect(fitCalls()).toBe(2))
+
+    await user.click(within(list).getByRole('button', { name: /Software Engineer Intern/ }))
+    expect(await screen.findByText('Overall fit summary.')).toBeInTheDocument()
+    expect(fitCalls()).toBe(2) // shown from the earlier result, no new request
+  })
+
+  it('joins an analysis already running for the same job instead of starting another', async () => {
+    let finish!: (v: unknown) => void
+    const fetchMock = mockApi({ '/api/jobs/fit-analysis': new Promise((resolve) => (finish = resolve)) })
+    const user = userEvent.setup()
+    render(<App />)
+    await openJobSearch(user)
+
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    const list = await screen.findByRole('list', { name: 'Job results' })
+    await screen.findByText('Analyzing your fit…')
+    await user.click(within(list).getByRole('button', { name: /Software Engineer Intern/ }))
+    await user.click(within(list).getByRole('button', { name: /Software Engineer Intern/ }))
+
+    finish({ summary: 'One answer.', strengths: [], gaps: [], recommendations: [] })
+    expect(await screen.findByText('One answer.')).toBeInTheDocument()
+    expect(fetchMock.mock.calls.filter(([url]) => url === '/api/jobs/fit-analysis')).toHaveLength(1)
+  })
+
+  it("ignores a slow answer for the old profile once the profile changed", async () => {
+    localStorage.clear()
+    const replies: Array<(v: unknown) => void> = []
+    mockApi({ '/api/jobs/fit-analysis': () => new Promise((resolve) => replies.push(resolve)) })
+    const user = userEvent.setup()
+    render(<App />)
+    await openJobSearch(user)
+
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    const list = await screen.findByRole('list', { name: 'Job results' })
+    await waitFor(() => expect(replies).toHaveLength(1)) // analysis for the old profile, still running
+
+    localStorage.setItem('mmi-career-profile', JSON.stringify({ ...MOCK_CAREER_PROFILE, skills: ['Go'] }))
+    await user.click(within(list).getByRole('button', { name: /Software Engineer Intern/ }))
+    await waitFor(() => expect(replies).toHaveLength(2))
+
+    replies[1]({ summary: 'For the new profile.', strengths: [], gaps: [], recommendations: [] })
+    expect(await screen.findByText('For the new profile.')).toBeInTheDocument()
+    replies[0]({ summary: 'For the old profile.', strengths: [], gaps: [], recommendations: [] })
+    await new Promise((r) => setTimeout(r, 20))
+    expect(screen.queryByText('For the old profile.')).not.toBeInTheDocument()
+    expect(screen.getByText('For the new profile.')).toBeInTheDocument()
+    localStorage.clear()
+  })
+
+  it('analyzes again when a job with the same id comes back with new content', async () => {
+    let searches = 0
+    const fetchMock = mockApi({
+      '/api/jobs/search': () => [{ ...JOB, description: searches++ === 0 ? 'Old description.' : 'Updated description.' }],
+    })
+    const fitBodies = () =>
+      fetchMock.mock.calls.filter(([url]) => url === '/api/jobs/fit-analysis').map(([, init]) => JSON.parse(String(init?.body)))
+    const user = userEvent.setup()
+    render(<App />)
+    await openJobSearch(user)
+
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    await waitFor(() => expect(fitBodies()).toHaveLength(1))
+    await user.click(screen.getByRole('button', { name: 'Search jobs' })) // same id, new description
+    await waitFor(() => expect(fitBodies()).toHaveLength(2))
+    expect(fitBodies()[1].job.description).toBe('Updated description.')
+  })
+
+  it('analyzes again after the profile changes', async () => {
+    localStorage.clear()
+    const fetchMock = mockApi()
+    const fitCalls = () => fetchMock.mock.calls.filter(([url]) => url === '/api/jobs/fit-analysis').length
+    const user = userEvent.setup()
+    render(<App />)
+    await openJobSearch(user)
+
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    const list = await screen.findByRole('list', { name: 'Job results' })
+    await waitFor(() => expect(fitCalls()).toBe(1))
+
+    localStorage.setItem('mmi-career-profile', JSON.stringify({ ...MOCK_CAREER_PROFILE, skills: ['Go'] }))
+    await user.click(within(list).getByRole('button', { name: /Software Engineer Intern/ }))
+    await waitFor(() => expect(fitCalls()).toBe(2))
+    localStorage.clear()
   })
 
   it('sends the chosen filters with the search', async () => {
