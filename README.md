@@ -1,5 +1,7 @@
 # MMI_appDev
 
+[![CI](https://github.com/YuhanZo/MMI_appDev/actions/workflows/ci.yml/badge.svg)](https://github.com/YuhanZo/MMI_appDev/actions/workflows/ci.yml)
+
 Career Decision Assistant — a CSE 5911 capstone app built on the Aivana
 Multi-Model Intelligence (MMI) API. React (Vite) frontend, FastAPI backend,
 SQLite by default.
@@ -117,6 +119,7 @@ Both default to canned data, and the interview is still canned, in
 ├── README.md                  you are here
 ├── dev.sh                     start backend + frontend together (`make dev` calls it)
 ├── Makefile
+├── .github/workflows/ci.yml   CI: backend pytest; frontend test, build, lint
 ├── ref/
 │   ├── overview.txt           Aivana's project brief
 │   └── prototype-data-format-v0.1.md   shared request/response format (source of truth)
@@ -202,6 +205,11 @@ cd frontend && npm test                 # 30 tests
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`
 and `cd frontend; npm test -- --run`.
+
+CI (`.github/workflows/ci.yml`) runs the same checks on every pull request and
+on pushes to `main`: backend `pytest`, and frontend `npm test`, `npm run build`
+(type check) and `npm run lint`. No secrets are needed, since the tests run in
+mock mode.
 
 Neither suite needs a running server. Backend tests swap `app.state.engine`
 for a fresh throwaway SQLite file per test, so the configured database
