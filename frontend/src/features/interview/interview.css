@@ -20,16 +20,6 @@
   line-height: 1.6;
 }
 
-.interview-page-header .interview-eyebrow {
-  margin: 0;
-  color: var(--aivana-color-action-link);
-  font-family: var(--aivana-font-mono);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .interview-header-meta {
   display: grid;
   min-width: 240px;
@@ -37,28 +27,10 @@
 }
 
 /* Panel */
-.interview-status-card,
 .interview-panel {
   border: 1px solid var(--aivana-color-border-hairline);
   border-radius: var(--aivana-radius-lg);
   background: var(--aivana-color-surface-card);
-}
-
-.interview-status-card {
-  padding: var(--aivana-space-4);
-}
-
-.interview-status-card span {
-  display: block;
-  color: var(--aivana-color-text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.interview-status-card strong {
-  display: block;
-  margin-top: var(--aivana-space-1);
-  font-size: 16px;
 }
 
 .interview-setup-panel,

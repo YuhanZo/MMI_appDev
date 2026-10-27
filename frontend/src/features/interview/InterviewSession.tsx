@@ -176,8 +176,8 @@ export default function InterviewSession({
           <InterviewFeedback feedback={feedback} />
         ) : (
           <div className="interview-feedback-empty">
-            <h2 className="interview-section-title">Feedback Preview</h2>
-            <p>Submit an answer to display prepared AI-style feedback for this question.</p>
+            <h2 className="interview-section-title">Interviewer Feedback</h2>
+            <p>Submit an answer to get the interviewer's feedback on it.</p>
           </div>
         )}
       </aside>
