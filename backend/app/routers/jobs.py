@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app import mock_data
+from app import job_api, mock_data
 from app.aivana import AivanaError
 from app.config import settings
 from app.db import get_db
@@ -13,21 +13,34 @@ router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 
 @router.post("/search", response_model=list[Job])
-def search_jobs(req: JobSearchRequest, db: Session = Depends(get_db)) -> list[Job]:
-    """Mocked job search. Filters the placeholder list so the UI has something to react to."""
-    needle = req.role.lower()
-    results = [j for j in mock_data.JOBS if needle in j.title.lower()] or mock_data.JOBS
+async def search_jobs(req: JobSearchRequest, db: Session = Depends(get_db)) -> list[Job]:
+    """Real listings from JSearch when JOB_API_MODE=jsearch, canned jobs otherwise."""
+    if settings.job_api_mode == "mock":
+        results = _mock_search(req)
+    else:
+        try:
+            raw = await job_api.search_jobs(req, settings.jsearch_api_key)
+        except job_api.JobApiError as e:
+            raise HTTPException(status_code=502, detail={"message": str(e), "code": "job_api_error"}) from e
+        results = [Job(**job) for job in raw]
 
     db.add(
         SearchLog(
             role=req.role,
             location=req.location,
-            remote=req.remote,
+            # The table predates the new filters; it still records whether the search was remote.
+            remote=req.work_arrangement == "remote",
             result_count=len(results),
         )
     )
     db.commit()
     return results
+
+
+def _mock_search(req: JobSearchRequest) -> list[Job]:
+    """Filters the placeholder list by role so the UI has something to react to."""
+    needle = req.role.lower()
+    return [j for j in mock_data.JOBS if needle in j.title.lower()] or mock_data.JOBS
 
 
 @router.post("/fit-analysis", response_model=FitAnalysisResult)

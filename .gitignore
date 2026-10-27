@@ -238,3 +238,6 @@ coverage/
 # Local-only notes, not shared
 CLAUDE.md
 ROADMAP.md
+
+# JSearch response cache (backend/app/job_api.py) -- regenerated on demand
+backend/.job_cache/

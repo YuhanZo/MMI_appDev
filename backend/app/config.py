@@ -23,11 +23,18 @@ class Settings(BaseSettings):
     aivana_api_key: str = ""
     aivana_base_url: str = ""
 
+    # mock: canned jobs from mock_data.py, no key needed (default).
+    # jsearch: real listings from the JSearch API, which needs a key.
+    job_api_mode: Literal["mock", "jsearch"] = "mock"
+    jsearch_api_key: str = ""
+
     @model_validator(mode="after")
-    def _live_mode_needs_credentials(self) -> "Settings":
+    def _modes_need_credentials(self) -> "Settings":
         # Fail at startup with a clear message rather than on the first request.
         if self.aivana_mode == "live" and not (self.aivana_api_key and self.aivana_base_url):
             raise ValueError("AIVANA_MODE=live needs AIVANA_API_KEY and AIVANA_BASE_URL in backend/.env")
+        if self.job_api_mode == "jsearch" and not self.jsearch_api_key:
+            raise ValueError("JOB_API_MODE=jsearch needs JSEARCH_API_KEY in backend/.env")
         return self
 
     @property
