@@ -30,6 +30,7 @@ export function useJobSearch() {
   const [selected, setSelected] = useState<Job | null>(null)
   const [fit, setFit] = useState<FitAnalysisResult | null>(null)
   const [analyzing, setAnalyzing] = useState(false)
+  const [waiting, setWaiting] = useState(false)
   const [fitError, setFitError] = useState('')
 
   // Key of the analysis the panel is waiting for. A response for any other key --
@@ -46,6 +47,18 @@ export function useJobSearch() {
   // Requests still running, by the same key: clicking a job again while it is being
   // analyzed joins that request instead of starting (and paying for) another.
   const inFlight = useRef(new Map<string, Promise<FitAnalysisResult>>())
+  // Aivana also caps how many requests run at once, so only one analysis runs at a
+  // time. A job clicked meanwhile waits here; only the latest click is kept, and it
+  // starts when the running analysis finishes.
+  const queued = useRef<Job | null>(null)
+
+  function startQueued() {
+    const next = queued.current
+    if (next && inFlight.current.size === 0) {
+      queued.current = null
+      void analyze(next)
+    }
+  }
 
   async function analyze(job: Job) {
     setSelected(job)
@@ -57,6 +70,17 @@ export function useJobSearch() {
     pendingKey.current = key
 
     const cached = analyses.current.get(key)
+    let running = inFlight.current.get(key)
+    if (!cached && !running && inFlight.current.size > 0) {
+      queued.current = job
+      setFit(null)
+      setAnalyzing(false)
+      setWaiting(true)
+      return
+    }
+    queued.current = null
+    setWaiting(false)
+
     if (cached) {
       setFit(cached)
       setAnalyzing(false)
@@ -65,13 +89,15 @@ export function useJobSearch() {
 
     setFit(null)
     setAnalyzing(true)
-    let running = inFlight.current.get(key)
     if (!running) {
       running = api.fitAnalysis(request)
       inFlight.current.set(key, running)
       running
         .then((result) => analyses.current.set(key, result), () => {}) // failures aren't stored
-        .finally(() => inFlight.current.delete(key))
+        .finally(() => {
+          inFlight.current.delete(key)
+          startQueued()
+        })
     }
     try {
       const result = await running
@@ -90,6 +116,8 @@ export function useJobSearch() {
     }
 
     pendingKey.current = null
+    queued.current = null
+    setWaiting(false)
     setSearchError('')
     setSelected(null)
     setFit(null)
@@ -120,6 +148,7 @@ export function useJobSearch() {
     selected,
     fit,
     analyzing,
+    waiting,
     fitError,
     search,
     analyze,

@@ -3,7 +3,7 @@ import type { Job } from '../../types'
 import type { JobSearchState } from './useJobSearch'
 
 export default function FitPanel({ js, onPracticeInterview }: { js: JobSearchState; onPracticeInterview: (job: Job) => void }) {
-  const { selected, fit, analyzing, fitError } = js
+  const { selected, fit, analyzing, waiting, fitError } = js
 
   if (!selected) {
     return (
@@ -14,7 +14,7 @@ export default function FitPanel({ js, onPracticeInterview }: { js: JobSearchSta
   }
 
   return (
-    <aside className="fit-panel" aria-label="Fit analysis" aria-busy={analyzing}>
+    <aside className="fit-panel" aria-label="Fit analysis" aria-busy={analyzing || waiting}>
       <h2 className="fit-title">{selected.title}</h2>
       <p className="fit-meta">
         {selected.company}
@@ -25,6 +25,11 @@ export default function FitPanel({ js, onPracticeInterview }: { js: JobSearchSta
       </p>
 
       {analyzing && <p className="empty">Analyzing your fit…</p>}
+      {waiting && (
+        <p className="empty" role="status">
+          Waiting for the current analysis to finish…
+        </p>
+      )}
 
       {fitError && (
         <p className="error" role="alert">

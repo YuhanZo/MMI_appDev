@@ -347,14 +347,17 @@ describe('App', () => {
 
     localStorage.setItem('mmi-career-profile', JSON.stringify({ ...MOCK_CAREER_PROFILE, skills: ['Go'] }))
     await user.click(within(list).getByRole('button', { name: /Software Engineer Intern/ }))
-    await waitFor(() => expect(replies).toHaveLength(2))
+    // One analysis at a time: the new-profile analysis waits for the old one.
+    expect(await screen.findByText('Waiting for the current analysis to finish…')).toBeInTheDocument()
+    expect(replies).toHaveLength(1)
+
+    replies[0]({ summary: 'For the old profile.', strengths: [], gaps: [], recommendations: [] })
+    await waitFor(() => expect(replies).toHaveLength(2)) // the queued analysis starts
+    expect(screen.queryByText('For the old profile.')).not.toBeInTheDocument() // stale: ignored
 
     replies[1]({ summary: 'For the new profile.', strengths: [], gaps: [], recommendations: [] })
     expect(await screen.findByText('For the new profile.')).toBeInTheDocument()
-    replies[0]({ summary: 'For the old profile.', strengths: [], gaps: [], recommendations: [] })
-    await new Promise((r) => setTimeout(r, 20))
     expect(screen.queryByText('For the old profile.')).not.toBeInTheDocument()
-    expect(screen.getByText('For the new profile.')).toBeInTheDocument()
     localStorage.clear()
   })
 
@@ -374,6 +377,34 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Search jobs' })) // same id, new description
     await waitFor(() => expect(fitBodies()).toHaveLength(2))
     expect(fitBodies()[1].job.description).toBe('Updated description.')
+  })
+
+  it('runs one analysis at a time and then analyzes only the last job clicked', async () => {
+    const jobs = [JOB, { ...JOB, id: 'job_002', title: 'Data Analyst Intern' }, { ...JOB, id: 'job_003', title: 'QA Intern' }]
+    const replies: Array<(v: unknown) => void> = []
+    const fetchMock = mockApi({
+      '/api/jobs/search': jobs,
+      '/api/jobs/fit-analysis': () => new Promise((resolve) => replies.push(resolve)),
+    })
+    const fitJobs = () =>
+      fetchMock.mock.calls.filter(([url]) => url === '/api/jobs/fit-analysis').map(([, init]) => JSON.parse(String(init?.body)).job.id)
+    const user = userEvent.setup()
+    render(<App />)
+    await openJobSearch(user)
+
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    const list = await screen.findByRole('list', { name: 'Job results' })
+    await waitFor(() => expect(replies).toHaveLength(1)) // job_001 analyzing
+    await user.click(within(list).getByRole('button', { name: /Data Analyst Intern/ }))
+    await user.click(within(list).getByRole('button', { name: /QA Intern/ }))
+
+    expect(screen.getByText('Waiting for the current analysis to finish…')).toBeInTheDocument()
+    expect(fitJobs()).toEqual(['job_001']) // nothing else started yet
+
+    replies[0]({ summary: 'First.', strengths: [], gaps: [], recommendations: [] })
+    await waitFor(() => expect(fitJobs()).toEqual(['job_001', 'job_003'])) // job_002 skipped
+    replies[1]({ summary: 'Last clicked.', strengths: [], gaps: [], recommendations: [] })
+    expect(await screen.findByText('Last clicked.')).toBeInTheDocument()
   })
 
   it('analyzes again after the profile changes', async () => {

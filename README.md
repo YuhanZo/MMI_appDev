@@ -200,7 +200,7 @@ drift apart.
 
 ```bash
 cd backend && .venv/bin/pytest          # 48 tests
-cd frontend && npm test                 # 40 tests
+cd frontend && npm test                 # 41 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`
@@ -249,7 +249,9 @@ format retry share one budget per analysis: **at most 3 Aivana calls within
 90 s**, and each request's timeout is capped by the time left. The frontend
 reuses a finished analysis when the exact same job and profile would be sent,
 and joins one that is still running, so re-opening a job doesn't spend another
-(rate-limited) request. (The template must be in the
+(rate-limited) request. It also runs one analysis at a time, since Aivana caps
+concurrent requests: a job clicked meanwhile waits, and only the last one
+clicked runs next. (The template must be in the
 prompt: in testing, Aivana ignored format instructions given only in `system`.)
 
 All calls go through `backend/app/aivana.py`: 60 s timeout. Retried (at most
