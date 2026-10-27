@@ -32,9 +32,14 @@ export default function FitPanel({ js, onPracticeInterview }: { js: JobSearchSta
       )}
 
       {fitError && (
-        <p className="error" role="alert">
-          {fitError}
-        </p>
+        <>
+          <p className="error" role="alert">
+            {fitError}
+          </p>
+          <button type="button" className="btn-outline" onClick={js.retry}>
+            Retry
+          </button>
+        </>
       )}
 
       {fit && (

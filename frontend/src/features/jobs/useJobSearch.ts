@@ -3,6 +3,16 @@ import * as api from '../../api'
 import { loadCareerProfile, toUserProfile } from '../profile/profileStorage'
 import type { FitAnalysisResult, Job, JobSearchRequest } from '../../types'
 
+// Aivana allows 20 requests a minute and only a few at once (seen as "per-minute
+// request limit reached" and "Too many requests are running at once").
+const RATE_LIMIT_MESSAGE =
+  'Aivana is busy right now: it allows 20 analyses a minute and only a few at once. Wait a moment, then retry.'
+
+function isRateLimited(e: unknown): boolean {
+  const code = e instanceof api.ApiError ? (e.code ?? '') : ''
+  return /limit/i.test(code) || /limit reached|too many requests/i.test(String(e))
+}
+
 const DEFAULT_FILTERS: JobSearchRequest = {
   role: 'Software Engineer Intern',
   location: 'Columbus, OH',
@@ -103,10 +113,17 @@ export function useJobSearch() {
       const result = await running
       if (pendingKey.current === key) setFit(result)
     } catch (e) {
-      if (pendingKey.current === key) setFitError(`Couldn't analyze this job: ${String(e)}`)
+      if (pendingKey.current === key) {
+        setFitError(isRateLimited(e) ? RATE_LIMIT_MESSAGE : `Couldn't analyze this job: ${String(e)}`)
+      }
     } finally {
       if (pendingKey.current === key) setAnalyzing(false)
     }
+  }
+
+  // Failures aren't cached, so retrying just analyzes the selected job again.
+  function retry() {
+    if (selected) void analyze(selected)
   }
 
   async function search() {
@@ -152,6 +169,7 @@ export function useJobSearch() {
     fitError,
     search,
     analyze,
+    retry,
   }
 }
 

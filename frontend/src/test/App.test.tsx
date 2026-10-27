@@ -407,6 +407,28 @@ describe('App', () => {
     expect(await screen.findByText('Last clicked.')).toBeInTheDocument()
   })
 
+  it.each([
+    ['the per-minute limit', 'rate_limit_exceeded', 'per-minute request limit reached'],
+    ['the concurrency limit', null, 'Too many requests are running at once for this account. Retry when one finishes.'],
+  ])('explains %s and lets the user retry', async (_label, code, message) => {
+    let calls = 0
+    const fit = { summary: 'After retry.', strengths: [], gaps: [], recommendations: [] }
+    mockApi({
+      '/api/jobs/fit-analysis': () =>
+        calls++ === 0 ? new HttpReply(502, 'Bad Gateway', { detail: { message, code, request_id: 'req_9' } }) : fit,
+    })
+    const user = userEvent.setup()
+    render(<App />)
+    await openJobSearch(user)
+
+    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Aivana is busy right now')
+    await user.click(screen.getByRole('button', { name: 'Retry' }))
+
+    expect(await screen.findByText('After retry.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument()
+  })
+
   it('analyzes again after the profile changes', async () => {
     localStorage.clear()
     const fetchMock = mockApi()
