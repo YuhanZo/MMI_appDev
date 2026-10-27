@@ -24,7 +24,7 @@ export default function InterviewFeedback({ feedback }: { feedback: DetailedInte
   if (feedback.mode === 'behavioral') {
     return (
       <>
-        <h2 className="interview-section-title">AI-style Feedback</h2>
+        <h2 className="interview-section-title">Interviewer Feedback</h2>
         <FeedbackBlock title="Feedback">
           <p>{feedback.ai_feedback}</p>
         </FeedbackBlock>

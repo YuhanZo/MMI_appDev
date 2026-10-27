@@ -85,6 +85,7 @@ export default function InterviewSession({
                   type="button"
                   className={`interview-answer-type-button${answerType === 'text' ? ' active' : ''}`}
                   aria-pressed={answerType === 'text'}
+                  disabled={submitting}
                   onClick={() => onAnswerTypeChange('text')}
                 >
                   {answerType === 'text' && <Icon name="check" size={18} />}
@@ -94,6 +95,7 @@ export default function InterviewSession({
                   type="button"
                   className={`interview-answer-type-button${answerType === 'code' ? ' active' : ''}`}
                   aria-pressed={answerType === 'code'}
+                  disabled={submitting}
                   onClick={() => onAnswerTypeChange('code')}
                 >
                   {answerType === 'code' && <Icon name="check" size={18} />}
@@ -108,7 +110,12 @@ export default function InterviewSession({
             <p className="interview-assessment-note">AI Assessment Only — Code has not been executed against real test cases.</p>
             <div className="interview-field">
               <label htmlFor={`${question.id}-language`}>Programming Language</label>
-              <select id={`${question.id}-language`} value={language} onChange={(event) => onLanguageChange(event.target.value)}>
+              <select
+                id={`${question.id}-language`}
+                value={language}
+                disabled={submitting}
+                onChange={(event) => onLanguageChange(event.target.value)}
+              >
                 <option>Python</option>
                 <option>Java</option>
                 <option>C++</option>
@@ -124,6 +131,8 @@ export default function InterviewSession({
             id={`${question.id}-answer`}
             className={isCode ? 'interview-code-editor' : undefined}
             value={answer}
+            // Locked while feedback is generated, so the feedback always matches the answer shown.
+            readOnly={submitting}
             onChange={(event) => onAnswerChange(event.target.value)}
             spellCheck={!isCode}
             placeholder={isCode ? 'Write your solution or pseudocode here.' : 'Type your response here.'}
@@ -132,6 +141,13 @@ export default function InterviewSession({
 
         {error && <p className="interview-error" role="alert">{error}</p>}
 
+        {submitting && (
+          // Live AI feedback took 20-40 s in testing; say so, so the page doesn't look stuck.
+          <p className="interview-hint" role="status">
+            The interviewer is reviewing your answer. This can take up to a minute.
+          </p>
+        )}
+
         <div className="interview-actions">
           <button
             type="button"
@@ -139,17 +155,17 @@ export default function InterviewSession({
             onClick={onSubmit}
             disabled={submitting || answer.trim().length === 0}
           >
-            {submitting ? 'Submitting...' : 'Submit Answer'}
+            {submitting ? 'Evaluating your answer…' : 'Submit Answer'}
           </button>
           <button
             type="button"
             className="interview-secondary-button"
             onClick={onPrevious}
-            disabled={questionIndex === 0}
+            disabled={submitting || questionIndex === 0}
           >
             Previous
           </button>
-          <button type="button" className="interview-secondary-button" onClick={onNext}>
+          <button type="button" className="interview-secondary-button" onClick={onNext} disabled={submitting}>
             {questionIndex === questionCount - 1 ? 'Finish Interview' : 'Next Question'}
           </button>
         </div>
@@ -160,8 +176,8 @@ export default function InterviewSession({
           <InterviewFeedback feedback={feedback} />
         ) : (
           <div className="interview-feedback-empty">
-            <h2 className="interview-section-title">Feedback Preview</h2>
-            <p>Submit an answer to display prepared AI-style feedback for this question.</p>
+            <h2 className="interview-section-title">Interviewer Feedback</h2>
+            <p>Submit an answer to get the interviewer's feedback on it.</p>
           </div>
         )}
       </aside>

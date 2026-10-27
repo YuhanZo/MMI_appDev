@@ -49,7 +49,7 @@ function jsonResponse(body: unknown, ok = true): Response {
   return { ok, status: ok ? 200 : 500, statusText: ok ? 'OK' : 'Error', json: async () => body } as Response
 }
 
-function mockInterviewApi(options: { failFeedback?: boolean } = {}) {
+function mockInterviewApi(options: { failFeedback?: boolean; holdFeedback?: Promise<unknown> } = {}) {
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
     if (url === '/api/interview/questions?mode=behavioral') return jsonResponse(BEHAVIORAL_QUESTIONS)
     if (url === '/api/interview/questions?mode=technical') return jsonResponse(TECHNICAL_QUESTIONS)
@@ -57,6 +57,7 @@ function mockInterviewApi(options: { failFeedback?: boolean } = {}) {
       return jsonResponse(SUMMARY)
     }
     if (url === '/api/interview/detailed-feedback') {
+      if (options.holdFeedback) await options.holdFeedback
       if (options.failFeedback) return jsonResponse({}, false)
       const body = JSON.parse(String(init?.body)) as { question_id: string }
       return jsonResponse(body.question_id.startsWith('behavioral') ? BEHAVIORAL_FEEDBACK : TECHNICAL_FEEDBACK)
@@ -110,6 +111,49 @@ describe('InterviewWorkspace', () => {
       company: 'Aivana',
       position: 'Engineer',
     })
+  })
+
+  it('says the answer is being evaluated while feedback is generated', async () => {
+    let release!: (v: unknown) => void
+    mockInterviewApi({ holdFeedback: new Promise((resolve) => (release = resolve)) })
+    const user = await startInterview('behavioral')
+
+    await screen.findByText('Behavioral question 1')
+    await user.type(screen.getByLabelText('Your Answer'), 'I helped the team align.')
+    await user.click(screen.getByRole('button', { name: 'Submit Answer' }))
+
+    expect(screen.getByRole('button', { name: 'Evaluating your answer…' })).toBeDisabled()
+    expect(screen.getByRole('status')).toHaveTextContent('reviewing your answer')
+    // Locked while waiting, so the feedback can't end up next to a different answer or question.
+    expect(screen.getByLabelText('Your Answer')).toHaveAttribute('readonly')
+    expect(screen.getByRole('button', { name: 'Next Question' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Back to Interview Setup' })).toBeDisabled()
+
+    release(undefined)
+    expect(await screen.findByText('Situation and Task are clear.')).toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('Your Answer')).not.toHaveAttribute('readonly')
+    expect(screen.getByRole('button', { name: 'Next Question' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Back to Interview Setup' })).toBeEnabled()
+  })
+
+  it('locks the answer type and language while technical feedback is generated', async () => {
+    let release!: (v: unknown) => void
+    mockInterviewApi({ holdFeedback: new Promise((resolve) => (release = resolve)) })
+    const user = await startInterview('technical')
+
+    await screen.findByText('Technical question 1')
+    await user.click(screen.getByRole('button', { name: 'Code' }))
+    await user.type(screen.getByLabelText('Code Answer'), 'return x')
+    await user.click(screen.getByRole('button', { name: 'Submit Answer' }))
+
+    expect(screen.getByRole('button', { name: 'Code' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Text / Explanation' })).toBeDisabled()
+    expect(screen.getByLabelText('Programming Language')).toBeDisabled()
+
+    release(undefined)
+    await waitFor(() => expect(screen.getByLabelText('Programming Language')).toBeEnabled())
+    expect(screen.getByRole('button', { name: 'Code' })).toBeEnabled()
   })
 
   it('keeps answers when navigating between questions', async () => {

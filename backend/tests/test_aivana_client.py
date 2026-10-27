@@ -161,6 +161,19 @@ def test_a_spent_budget_sends_nothing(monkeypatch):
     assert seen == []
 
 
+def test_match_keys_restores_underscores_aivana_dropped():
+    from app.schemas import BehavioralDetailedFeedback
+
+    squashed = {"aifeedback": "ok", "Strengths": [], "areastoimprove": ["x"], "unknown_key": 1}
+    assert aivana.match_keys(squashed, BehavioralDetailedFeedback) == {
+        "ai_feedback": "ok",
+        "strengths": [],
+        "areas_to_improve": ["x"],
+        "unknown_key": 1,
+    }
+    assert aivana.match_keys(None, BehavioralDetailedFeedback) is None
+
+
 def test_live_mode_requires_credentials():
     with pytest.raises(ValidationError, match="AIVANA_MODE=live needs"):
         Settings(_env_file=None, aivana_mode="live", aivana_api_key="", aivana_base_url="")
