@@ -199,7 +199,7 @@ drift apart.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 48 tests
+cd backend && .venv/bin/pytest          # 50 tests
 cd frontend && npm test                 # 30 tests
 ```
 
@@ -248,6 +248,11 @@ retried once, then returned as 502 `bad_output`. Transport retries and the
 format retry share one budget per analysis: **at most 3 Aivana calls within
 90 s**, and each request's timeout is capped by the time left. (The template must be in the
 prompt: in testing, Aivana ignored format instructions given only in `system`.)
+Extract mode also drops underscores from JSON keys (a template key such as
+`star_structure` comes back as `starstructure`). Fit analysis's keys have no
+underscores, so it isn't affected today, but its replies still go through
+`aivana.match_keys()`, which maps keys back to a model's field names ignoring
+underscores and case, so models with snake_case fields can rely on it.
 
 All calls go through `backend/app/aivana.py`: 60 s timeout. Retried (at most
 twice, honouring `retry_after_ms`): 429 / 502 / 504, and connection failures

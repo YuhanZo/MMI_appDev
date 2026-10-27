@@ -42,7 +42,7 @@ def analyze_fit(req: FitAnalysisRequest) -> FitAnalysisResult:
         res = aivana.generate(prompt, output_shape="extract", budget=budget)
         request_id = res.get("request_id")
         try:
-            return FitAnalysisResult.model_validate(res.get("structured"))
+            return FitAnalysisResult.model_validate(aivana.match_keys(res.get("structured"), FitAnalysisResult))
         except ValidationError:
             continue
     raise aivana.AivanaError(

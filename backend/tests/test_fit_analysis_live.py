@@ -97,6 +97,13 @@ def test_worst_case_is_three_calls_not_six(client, live, sample_job, sample_prof
     assert len(seen) == 3
 
 
+def test_keys_with_different_case_are_accepted(client, live, sample_job, sample_profile):
+    live({key.capitalize(): value for key, value in GOOD.items()})
+    res = post_fit(client, sample_job, sample_profile)
+    assert res.status_code == 200
+    assert res.json() == GOOD
+
+
 def test_aivana_errors_surface_as_502_with_request_id(client, live, sample_job, sample_profile):
     live(httpx.Response(401, json={"error": {"code": "invalid_api_key", "message": "Invalid key", "request_id": "req_x"}}))
     res = post_fit(client, sample_job, sample_profile)

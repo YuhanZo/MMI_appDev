@@ -12,6 +12,7 @@ import time
 from typing import Any
 
 import httpx
+from pydantic import BaseModel
 
 from app.config import settings
 
@@ -116,6 +117,19 @@ def generate(
                 raise err
             _sleep(wait)
             attempt += 1
+
+
+def match_keys(structured: Any, model: type[BaseModel]) -> Any:
+    """Map Aivana's structured keys back to the model's field names.
+
+    With output_shape "extract", Aivana drops underscores from JSON keys
+    (ai_feedback -> aifeedback). Keys are matched ignoring underscores and case;
+    anything that matches no field, or a non-dict, passes through unchanged.
+    """
+    if not isinstance(structured, dict):
+        return structured
+    fields = {name.replace("_", "").lower(): name for name in model.model_fields}
+    return {fields.get(key.replace("_", "").lower(), key): value for key, value in structured.items()}
 
 
 def _body_or_raise(res: httpx.Response) -> dict[str, Any]:
