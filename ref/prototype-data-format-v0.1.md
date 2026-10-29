@@ -17,31 +17,28 @@ Used for job search input (`POST /api/jobs/search`).
 
 ```json
 {
-  "role": "Software Engineer Intern",
   "location": "Columbus, OH",
-  "work_arrangement": "remote",
-  "experience_level": "entry",
-  "employment_type": "internship",
-  "salary_min": 50000,
-  "salary_max": null,
-  "industry": ""
+  "job_functions": ["Software Engineer Intern", "Backend Engineer"],
+  "experience_levels": ["intern", "entry"],
+  "job_types": ["internship"],
+  "work_models": ["onsite", "hybrid"]
 }
 ```
 
 **Fields**
 
+An empty list means "any" for that filter.
+
 | Field | Type |
 | --- | --- |
-| `role` | string |
 | `location` | string |
-| `work_arrangement` | `any` \| `remote` \| `onsite` \| `hybrid` (default `any`) |
-| `experience_level` | `any` \| `entry` \| `mid` \| `senior` (default `any`) |
-| `employment_type` | `any` \| `full_time` \| `part_time` \| `contract` \| `internship` (default `any`) |
-| `salary_min` | integer \| null (yearly USD, >= 0) |
-| `salary_max` | integer \| null (yearly USD, >= 0; not below `salary_min`) |
-| `industry` | string (optional keyword, default `""`) |
+| `job_functions` | string[] (1-5 non-blank roles; each is searched separately and the results merged) |
+| `experience_levels` | (`intern` \| `entry` \| `mid` \| `senior` \| `lead` \| `director`)[] (default `[]`) |
+| `job_types` | (`full_time` \| `part_time` \| `contract` \| `internship`)[] (default `[]`) |
+| `work_models` | (`onsite` \| `hybrid` \| `remote`)[] (default `[]`) |
 
-Replaces v0.1's `remote: boolean` (now `work_arrangement: "remote"`).
+Replaces v0.1's `role` and `remote: boolean`, and the single-value `work_arrangement`,
+`experience_level`, `employment_type`, `salary_min`/`salary_max` and `industry` filters.
 
 ---
 

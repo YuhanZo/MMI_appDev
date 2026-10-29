@@ -26,10 +26,11 @@ async def search_jobs(req: JobSearchRequest, db: Session = Depends(get_db)) -> l
 
     db.add(
         SearchLog(
-            role=req.role,
+            # The table predates multi-value filters: job functions are stored joined,
+            # and `remote` records whether the search was remote-only.
+            role=", ".join(req.job_functions)[:255],
             location=req.location,
-            # The table predates the new filters; it still records whether the search was remote.
-            remote=req.work_arrangement == "remote",
+            remote=req.work_models == ["remote"],
             result_count=len(results),
         )
     )
@@ -38,9 +39,9 @@ async def search_jobs(req: JobSearchRequest, db: Session = Depends(get_db)) -> l
 
 
 def _mock_search(req: JobSearchRequest) -> list[Job]:
-    """Filters the placeholder list by role so the UI has something to react to."""
-    needle = req.role.lower()
-    return [j for j in mock_data.JOBS if needle in j.title.lower()] or mock_data.JOBS
+    """Filters the placeholder list by job function so the UI has something to react to."""
+    needles = [f.lower() for f in req.job_functions]
+    return [j for j in mock_data.JOBS if any(n in j.title.lower() for n in needles)] or mock_data.JOBS
 
 
 @router.post("/fit-analysis", response_model=FitAnalysisResult)

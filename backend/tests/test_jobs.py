@@ -9,7 +9,7 @@ FIT_FIELDS = {"summary", "strengths", "gaps", "recommendations"}
 def test_search_returns_jobs_in_the_shared_format(client):
     res = client.post(
         "/api/jobs/search",
-        json={"role": "Software Engineer Intern", "location": "Columbus, OH", "work_arrangement": "remote"},
+        json={"job_functions": ["Software Engineer Intern"], "location": "Columbus, OH", "work_models": ["remote"]},
     )
     assert res.status_code == 200
     jobs = res.json()
@@ -18,20 +18,20 @@ def test_search_returns_jobs_in_the_shared_format(client):
         assert set(job) == JOB_FIELDS
 
 
-def test_search_filters_by_role(client):
+def test_search_filters_by_any_job_function(client):
     res = client.post(
         "/api/jobs/search",
-        json={"role": "Frontend", "location": "Columbus, OH", "work_arrangement": "any"},
+        json={"job_functions": ["Frontend", "Data"], "location": "Columbus, OH"},
     )
     titles = [j["title"] for j in res.json()]
-    assert titles == ["Frontend Developer Intern"]
+    assert titles == ["Frontend Developer Intern", "Data Analyst Intern"]
 
 
 def test_search_falls_back_to_all_jobs_when_nothing_matches(client):
     """Documents current mock behaviour -- revisit once the real job API is wired up."""
     res = client.post(
         "/api/jobs/search",
-        json={"role": "Underwater Basket Weaver", "location": "Columbus, OH", "work_arrangement": "any"},
+        json={"job_functions": ["Underwater Basket Weaver"], "location": "Columbus, OH"},
     )
     assert len(res.json()) == 3
 
@@ -39,7 +39,7 @@ def test_search_falls_back_to_all_jobs_when_nothing_matches(client):
 def test_search_is_logged_to_the_database(client, session):
     client.post(
         "/api/jobs/search",
-        json={"role": "Data Analyst", "location": "Remote", "work_arrangement": "remote"},
+        json={"job_functions": ["Data Analyst"], "location": "Remote", "work_models": ["remote"]},
     )
     logs = session.query(SearchLog).all()
     assert len(logs) == 1
@@ -49,7 +49,7 @@ def test_search_is_logged_to_the_database(client, session):
 
 
 def test_search_rejects_a_missing_field(client):
-    res = client.post("/api/jobs/search", json={"role": "Intern"})
+    res = client.post("/api/jobs/search", json={"job_functions": ["Intern"]})
     assert res.status_code == 422
 
 

@@ -14,22 +14,22 @@ function isRateLimited(e: unknown): boolean {
 }
 
 const DEFAULT_FILTERS: JobSearchRequest = {
-  role: 'Software Engineer Intern',
   location: 'Columbus, OH',
-  work_arrangement: 'any',
-  experience_level: 'any',
-  employment_type: 'any',
-  salary_min: null,
-  salary_max: null,
-  industry: '',
+  job_functions: ['Software Engineer Intern'],
+  experience_levels: [],
+  job_types: [],
+  work_models: [],
 }
 
 // Used by JobSearchView; the view stays mounted when hidden, so results survive switching views.
 export function useJobSearch() {
   const [filters, setFilters] = useState<JobSearchRequest>(DEFAULT_FILTERS)
 
-  function setFilter<K extends keyof JobSearchRequest>(key: K, value: JobSearchRequest[K]) {
-    setFilters((prev) => ({ ...prev, [key]: value }))
+  // Each confirmed filter change runs the search again.
+  function applyFilter<K extends keyof JobSearchRequest>(key: K, value: JobSearchRequest[K]) {
+    const next = { ...filters, [key]: value }
+    setFilters(next)
+    void search(next)
   }
 
   const [jobs, setJobs] = useState<Job[]>([])
@@ -126,12 +126,7 @@ export function useJobSearch() {
     if (selected) void analyze(selected)
   }
 
-  async function search() {
-    if (filters.salary_min !== null && filters.salary_max !== null && filters.salary_min > filters.salary_max) {
-      setSearchError('Minimum salary can’t be higher than maximum salary.')
-      return
-    }
-
+  async function search(request: JobSearchRequest = filters) {
     pendingKey.current = null
     queued.current = null
     setWaiting(false)
@@ -142,7 +137,7 @@ export function useJobSearch() {
     setAnalyzing(false)
     setSearching(true)
     try {
-      const results = await api.searchJobs(filters)
+      const results = await api.searchJobs(request)
       setJobs(results)
       setSearched(true)
       // Open the top result right away, like the mockup.
@@ -157,7 +152,7 @@ export function useJobSearch() {
 
   return {
     filters,
-    setFilter,
+    applyFilter,
     jobs,
     searched,
     searching,

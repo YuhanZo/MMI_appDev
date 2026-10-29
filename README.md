@@ -159,7 +159,7 @@ Both default to canned data, and the interview is still canned, in
         ├── main.tsx           React entry
         ├── App.tsx            shell: top bar, account menu, sidebar, Home, and which
         │                      view is showing
-        ├── features/jobs      job search form + filters, result cards, fit panel
+        ├── features/jobs      job search filter chips, result cards, fit panel
         ├── features/interview setup, five-question session, feedback,
         │                      completion and summary components
         ├── features/profile   editable profile page, saved in the browser
@@ -189,7 +189,7 @@ drift apart.
 | Method | Path | Returns |
 | --- | --- | --- |
 | GET | `/api/health` | runs `SELECT 1`; `200 {status: ok, database: <dialect>}`, or `503` if the database is unreachable |
-| POST | `/api/jobs/search` | `Job[]` from JSearch when `JOB_API_MODE=jsearch`, canned otherwise; filters: role, location, work arrangement, experience, employment type, salary, industry; logs the search to the DB; `502 {detail: {message, code}}` if JSearch fails |
+| POST | `/api/jobs/search` | `Job[]` from JSearch when `JOB_API_MODE=jsearch`, canned otherwise; filters: location, job functions (1-5, one JSearch request each), experience levels, job types, work models; logs the search to the DB; `502 {detail: {message, code}}` if JSearch fails |
 | POST | `/api/jobs/fit-analysis` | `FitAnalysisResult` from Aivana in live mode (8-20 s), canned in mock mode; `502 {detail: {message, code, request_id}}` if Aivana fails |
 | GET | `/api/interview/questions?mode=behavioral\|technical` | five prepared questions for the selected mode |
 | POST | `/api/interview/feedback` | `InterviewFeedback` (mocked) |
@@ -199,8 +199,8 @@ drift apart.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 48 tests
-cd frontend && npm test                 # 43 tests
+cd backend && .venv/bin/pytest          # 52 tests
+cd frontend && npm test                 # 46 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`
@@ -273,10 +273,12 @@ Set in `backend/.env`:
 | `JOB_API_MODE` | `mock` (default): canned jobs, no key needed. `jsearch`: real listings. |
 | `JSEARCH_API_KEY` | Key from https://www.openwebninja.com/api/jsearch (free tier: 200 requests/month) |
 
-`backend/app/job_api.py` sends role, location, remote, employment type and
-experience level to JSearch, then filters hybrid / on-site and salary (converted
-to yearly) itself. Raw results are cached in `backend/.job_cache/` for 24 h, so
-repeating a search, or changing only salary, doesn't spend a request. With
+`backend/app/job_api.py` sends one request per job function (merging the results),
+with location, job types, experience and remote-only as JSearch parameters. It
+filters on-site / hybrid / mixed work models itself. JSearch only knows "no
+experience", "under 3 years" and "over 3 years", so Senior, Lead/Staff and
+Director/Executive are matched by job title (approximate). Raw results are cached in
+`backend/.job_cache/` for 24 h per request, so repeating a search doesn't spend a request. With
 `JOB_API_MODE=jsearch` and no key, the backend refuses to start. Tests never
 call JSearch: `conftest.py` forces mock mode and fails on any real request.
 
