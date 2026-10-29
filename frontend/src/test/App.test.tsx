@@ -227,6 +227,38 @@ describe('App', () => {
     })
   })
 
+  it('shows the job, its posting link and details while the analysis is still running', async () => {
+    mockApi({ '/api/jobs/fit-analysis': new Promise(() => {}) })
+    const user = userEvent.setup()
+    render(<App />)
+    await openJobSearch(user)
+
+    const panel = await screen.findByRole('complementary', { name: 'Fit analysis' })
+    await within(panel).findByText('Analyzing your fit…')
+    const title = within(panel).getByRole('link', { name: 'Software Engineer Intern' })
+    expect(title).toHaveAttribute('href', JOB.url)
+    expect(title).toHaveAttribute('target', '_blank')
+    expect(within(panel).getByRole('link', { name: 'View posting' })).toHaveAttribute('href', JOB.url)
+    expect(within(panel).getByRole('button', { name: /Practice interview/ })).toBeInTheDocument()
+
+    const details = within(panel).getByText('About this job').closest('details')!
+    expect(details).not.toHaveAttribute('open')
+    await user.click(within(panel).getByText('About this job'))
+    expect(details).toHaveAttribute('open')
+    expect(within(details).getByText(JOB.description)).toBeVisible()
+  })
+
+  it('shows a plain title and no posting link when the posting has no URL', async () => {
+    mockApi({ '/api/jobs/search': [{ ...JOB, url: '' }] })
+    const user = userEvent.setup()
+    render(<App />)
+    await openJobSearch(user)
+
+    const panel = await screen.findByRole('complementary', { name: 'Fit analysis' })
+    expect(await within(panel).findByRole('heading', { name: 'Software Engineer Intern' })).toBeInTheDocument()
+    expect(within(panel).queryByRole('link')).not.toBeInTheDocument()
+  })
+
   it('surfaces a search error to the user', async () => {
     mockApi({ '/api/jobs/search': new Error('500 Internal Server Error') })
     const user = userEvent.setup()

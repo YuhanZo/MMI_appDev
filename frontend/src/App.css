@@ -563,15 +563,6 @@
   gap: var(--aivana-space-3);
 }
 
-.next-steps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--aivana-space-2);
-  margin-top: var(--aivana-space-4);
-  padding-top: var(--aivana-space-4);
-  border-top: 1px solid var(--aivana-color-border-hairline);
-}
-
 .tile {
   padding: var(--aivana-space-3) var(--aivana-space-4);
   border: 1px solid var(--aivana-color-border-hairline);

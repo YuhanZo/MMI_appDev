@@ -186,3 +186,68 @@
 .chip-confirm:disabled {
   color: var(--aivana-color-text-disabled);
 }
+
+/* Job details in the fit panel, shown before the analysis finishes */
+.fit-title a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--aivana-color-action-link);
+  text-decoration: none;
+}
+
+.fit-title a:hover {
+  text-decoration: underline;
+}
+
+.fit-title a:focus-visible {
+  outline: var(--aivana-focus-ring);
+  outline-offset: var(--aivana-focus-offset);
+}
+
+.job-details {
+  margin-bottom: var(--aivana-space-4);
+  border: 1px solid var(--aivana-color-border-hairline);
+  border-radius: var(--aivana-radius-md);
+}
+
+.job-details summary {
+  display: flex;
+  align-items: center;
+  gap: var(--aivana-space-2);
+  min-height: var(--aivana-touch-min);
+  padding: 0 var(--aivana-space-3);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.job-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.job-details:not([open]) summary svg {
+  transform: rotate(-90deg);
+}
+
+.job-details summary svg {
+  transition: transform var(--aivana-motion-fast);
+}
+
+.job-details p {
+  max-height: 320px;
+  margin: 0;
+  padding: 0 var(--aivana-space-3) var(--aivana-space-3);
+  overflow-y: auto;
+  color: var(--aivana-color-text-secondary);
+  white-space: pre-line;
+}
+
+.fit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--aivana-space-2);
+  margin-bottom: var(--aivana-space-4);
+  padding-bottom: var(--aivana-space-4);
+  border-bottom: 1px solid var(--aivana-color-border-hairline);
+}
