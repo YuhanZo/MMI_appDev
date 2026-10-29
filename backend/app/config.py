@@ -28,6 +28,17 @@ class Settings(BaseSettings):
     job_api_mode: Literal["mock", "jsearch"] = "mock"
     jsearch_api_key: str = ""
 
+    # The general model the Benchmark tab compares Aivana with, over an
+    # OpenAI-compatible chat API (Gemini by default).
+    # mock: canned answers, no key needed (default). live: real calls.
+    baseline_mode: Literal["mock", "live"] = "mock"
+    baseline_api_key: str = ""
+    baseline_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
+    baseline_model: str = "gemini-3.5-flash"
+    # USD per million tokens, from the provider's price list; unset means cost isn't shown.
+    baseline_price_in_per_m: float | None = None
+    baseline_price_out_per_m: float | None = None
+
     @model_validator(mode="after")
     def _modes_need_credentials(self) -> "Settings":
         # Fail at startup with a clear message rather than on the first request.
@@ -35,6 +46,8 @@ class Settings(BaseSettings):
             raise ValueError("AIVANA_MODE=live needs AIVANA_API_KEY and AIVANA_BASE_URL in backend/.env")
         if self.job_api_mode == "jsearch" and not self.jsearch_api_key:
             raise ValueError("JOB_API_MODE=jsearch needs JSEARCH_API_KEY in backend/.env")
+        if self.baseline_mode == "live" and not self.baseline_api_key:
+            raise ValueError("BASELINE_MODE=live needs BASELINE_API_KEY in backend/.env")
         return self
 
     @property

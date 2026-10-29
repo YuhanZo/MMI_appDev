@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app import aivana, job_api
+from app import aivana, baseline, job_api
 from app.config import settings
 from app.db import Base
 from app.main import app
@@ -45,6 +45,22 @@ def no_real_jsearch(monkeypatch):
     monkeypatch.setattr(settings, "job_api_mode", "mock")
     monkeypatch.setattr(settings, "jsearch_api_key", "test-key")
     monkeypatch.setattr(job_api, "_fetch_listings", refuse)
+
+
+@pytest.fixture(autouse=True)
+def no_real_baseline(monkeypatch):
+    """Same for the Benchmark's baseline model (it would spend the Gemini quota)."""
+
+    def refuse(request):
+        raise AssertionError(f"test tried to call the real baseline model: {request.url}")
+
+    monkeypatch.setattr(settings, "baseline_mode", "mock")
+    monkeypatch.setattr(settings, "baseline_api_key", "test-key")
+    monkeypatch.setattr(settings, "baseline_base_url", "https://baseline.test/v1")
+    monkeypatch.setattr(settings, "baseline_model", "test-model")
+    monkeypatch.setattr(settings, "baseline_price_in_per_m", None)
+    monkeypatch.setattr(settings, "baseline_price_out_per_m", None)
+    monkeypatch.setattr(baseline, "_transport", httpx.MockTransport(refuse))
 
 
 @pytest.fixture

@@ -55,6 +55,25 @@ export interface FitAnalysisResult {
   recommendations: string[]
 }
 
+export interface ModelRun {
+  system: 'aivana' | 'baseline'
+  model: string
+  mock: boolean // canned answer: the numbers are placeholders
+  answer: FitAnalysisResult | null // null if the call failed or the format didn't match
+  format_ok: boolean // matched the fit analysis format on the first try
+  latency_ms: number
+  cost: number | null // in cost_unit; null if unknown
+  cost_unit: 'credits' | 'usd'
+  input_tokens: number | null
+  output_tokens: number | null
+  error: string | null
+  request_id: string | null
+}
+
+export interface BenchmarkResult {
+  runs: ModelRun[] // Aivana first, then the baseline
+}
+
 export interface InterviewQuestion {
   id: string
   question: string

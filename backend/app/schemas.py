@@ -82,6 +82,27 @@ class FitAnalysisResult(BaseModel):
     recommendations: list[str]
 
 
+class ModelRun(BaseModel):
+    """One model's answer to a benchmark prompt, with what it took to get it."""
+
+    system: Literal["aivana", "baseline"]
+    model: str
+    mock: bool  # canned answer: the numbers are placeholders
+    answer: FitAnalysisResult | None  # None if the call failed or the format didn't match
+    format_ok: bool  # matched the fit analysis format on the first try
+    latency_ms: int
+    cost: float | None  # in cost_unit; None if unknown
+    cost_unit: Literal["credits", "usd"]
+    input_tokens: int | None
+    output_tokens: int | None
+    error: str | None = None
+    request_id: str | None = None
+
+
+class BenchmarkResult(BaseModel):
+    runs: list[ModelRun]  # Aivana first, then the baseline
+
+
 class InterviewQuestion(BaseModel):
     id: str
     question: str

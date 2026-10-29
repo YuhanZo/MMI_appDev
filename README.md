@@ -128,7 +128,7 @@ SQLite.
 │
 ├── backend/
 │   ├── requirements.txt
-│   ├── .env.example           DATABASE_URL, CORS origins, Aivana mode/key/URL
+│   ├── .env.example           DATABASE_URL, CORS origins, Aivana, JSearch, baseline model
 │   ├── pytest.ini
 │   ├── app/
 │   │   ├── main.py            app setup, CORS, table creation, /api/health
@@ -136,6 +136,8 @@ SQLite.
 │   │   ├── fit_analysis.py    prompt + format check for AI fit analysis
 │   │   ├── interview_ai.py    prompt + validation for five generated questions
 │   │   ├── resume.py          text from an uploaded resume (PDF, .docx, .txt)
+│   │   ├── baseline.py        general model for the Benchmark (OpenAI-compatible chat API)
+│   │   ├── benchmark.py       same fit prompt to Aivana and the baseline: speed, cost, format
 │   │   ├── job_api.py         JSearch client: query params, post-filters, 24 h disk cache
 │   │   ├── config.py          env-driven settings (reads .env)
 │   │   ├── db.py              engine + get_db session dependency
@@ -145,11 +147,13 @@ SQLite.
 │   │   └── routers/
 │   │       ├── jobs.py        /api/jobs/search, /api/jobs/fit-analysis
 │   │       ├── interview.py   interview session, questions, and feedback APIs
-│   │       └── profile.py     /api/profile/resume
+│   │       ├── profile.py     /api/profile/resume
+│   │       └── benchmark.py   /api/benchmark/run
 │   └── tests/
 │       ├── conftest.py        throwaway SQLite per test, test client, no real Aivana calls
 │       ├── test_aivana_client.py
 │       ├── test_resume.py
+│       ├── test_benchmark.py
 │       ├── test_fit_analysis_live.py
 │       ├── test_job_search_jsearch.py
 │       ├── test_health.py
@@ -205,6 +209,7 @@ drift apart.
 | POST | `/api/interview/feedback` | `InterviewFeedback` (mocked) |
 | POST | `/api/interview/detailed-feedback` | prepared mode-specific detailed feedback |
 | GET | `/api/interview/summary?mode=behavioral\|technical` | legacy prepared summary endpoint; the interview workflow uses the session endpoint above |
+| POST | `/api/benchmark/run` | `BenchmarkResult`: the fit analysis prompt for a `FitAnalysisRequest`, sent once to Aivana and once to the baseline model in parallel; each side reports its answer, speed, cost, tokens, format check and any error; `429 {detail: {message, code: benchmark_busy}}` while another benchmark runs |
 
 ## Tests
 
@@ -292,6 +297,27 @@ Aivana has no idempotency key. A reply that isn't the documented JSON object (no
 a list, a malformed `error`) becomes `invalid_response`, so the route returns
 502 rather than crashing with 500. Tests never reach the real API: `conftest.py` forces mock mode
 and installs a transport that fails on any real request.
+
+## Benchmark (Aivana vs a general model)
+
+The Benchmark tab (sidebar, below Technical Interview) sends the fit analysis prompt
+to Aivana and to one general model and shows the two answers side by side, each named
+with its model, so they can be compared and rated. Set in `backend/.env`:
+
+| Variable | Value |
+| --- | --- |
+| `BASELINE_MODE` | `mock` (default): canned answers, no key needed. `live`: real calls. |
+| `BASELINE_API_KEY` | Key for the baseline provider (Gemini: https://aistudio.google.com/apikey) |
+| `BASELINE_BASE_URL` | OpenAI-compatible API root; default Gemini's `https://generativelanguage.googleapis.com/v1beta/openai` |
+| `BASELINE_MODEL` | default `gemini-3.5-flash` (`gemini-2.5-flash` is closed to new Gemini accounts) |
+| `BASELINE_PRICE_IN_PER_M`, `BASELINE_PRICE_OUT_PER_M` | USD per million input / output tokens, from the provider's price list; without them no cost is shown |
+
+Each side gets one attempt, with no format retry, so the numbers describe a single
+call. Speed is measured by the backend around the call. Aivana's cost is the
+`usage.credits` it reports (the USD value of a credit isn't confirmed yet); the
+baseline's is its token counts times the prices above. Format is whether the reply
+matches `FitAnalysisResult` on the first try. Quality is the user's 1-5 rating in the
+tab. Only one benchmark runs at a time, to stay within Aivana's rate limits.
 
 ## Job listings (JSearch)
 

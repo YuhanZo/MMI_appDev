@@ -3,7 +3,7 @@
 ## Purpose
 
 Changes since v0.1: job search filters and `company_logo` (sections 1-2);
-interview questions by `mode`, detailed feedback and summary (sections 9-11). The filename keeps `v0.1` so existing links still work.
+interview questions by `mode`, detailed feedback and summary (sections 9-11); benchmark results (section 12). The filename keeps `v0.1` so existing links still work.
 
 Shared data formats for frontend and backend development.
 
@@ -401,6 +401,50 @@ answers have been evaluated.
 The overall evaluation and recommendation lists come from Aivana. Total and
 average scores are calculated by the backend; question results come directly
 from the saved SQLite turns. A successful response is cached in the session.
+
+---
+
+## 12. BenchmarkResult
+
+Returned by `POST /api/benchmark/run` (request: a `FitAnalysisRequest`). One
+`ModelRun` per model: Aivana first, then the baseline.
+
+```json
+{
+  "runs": [
+    {
+      "system": "aivana",
+      "model": "aivana-mmi",
+      "mock": false,
+      "answer": { "summary": "...", "strengths": [], "gaps": [], "recommendations": [] },
+      "format_ok": true,
+      "latency_ms": 13374,
+      "cost": 0.000243,
+      "cost_unit": "credits",
+      "input_tokens": 23,
+      "output_tokens": 55,
+      "error": null,
+      "request_id": "req_d749408b0aedcd00e9bc3cef"
+    }
+  ]
+}
+```
+
+**ModelRun fields**
+
+| Field | Type |
+| --- | --- |
+| `system` | `aivana` \| `baseline` |
+| `model` | string (as reported; Aivana says `aivana-mmi`) |
+| `mock` | boolean (canned answer; the numbers are placeholders) |
+| `answer` | `FitAnalysisResult` \| null (null if the call failed or the format didn't match) |
+| `format_ok` | boolean (matched `FitAnalysisResult` on the first try) |
+| `latency_ms` | integer |
+| `cost` | number \| null (in `cost_unit`; null if unknown) |
+| `cost_unit` | `credits` \| `usd` |
+| `input_tokens`, `output_tokens` | integer \| null |
+| `error` | string \| null |
+| `request_id` | string \| null (Aivana only) |
 
 ---
 
