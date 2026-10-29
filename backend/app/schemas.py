@@ -2,30 +2,34 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator
 
 InterviewMode = Literal["behavioral", "technical"]
 InterviewAnswerType = Literal["text", "code"]
 
-WorkArrangement = Literal["any", "remote", "onsite", "hybrid"]
-ExperienceLevel = Literal["any", "entry", "mid", "senior"]
-EmploymentType = Literal["any", "full_time", "part_time", "contract", "internship"]
+WorkModel = Literal["onsite", "hybrid", "remote"]
+ExperienceLevel = Literal["intern", "entry", "mid", "senior", "lead", "director"]
+JobType = Literal["full_time", "part_time", "contract", "internship"]
+
+MAX_JOB_FUNCTIONS = 5  # each one is a separate JSearch request
+
 
 class JobSearchRequest(BaseModel):
-    role: str
-    location: str
-    work_arrangement: WorkArrangement = "any"
-    experience_level: ExperienceLevel = "any"
-    employment_type: EmploymentType = "any"
-    salary_min: int | None = Field(default=None, ge=0)  # yearly, USD
-    salary_max: int | None = Field(default=None, ge=0)  # yearly, USD
-    industry: str = ""
+    """An empty list means "any" for that filter."""
 
-    @model_validator(mode="after")
-    def check_salary_range(self):
-        if self.salary_min is not None and self.salary_max is not None and self.salary_min > self.salary_max:
-            raise ValueError("salary_min can't be greater than salary_max")
-        return self
+    location: str
+    job_functions: list[str] = Field(min_length=1, max_length=MAX_JOB_FUNCTIONS)
+    experience_levels: list[ExperienceLevel] = []
+    job_types: list[JobType] = []
+    work_models: list[WorkModel] = []
+
+    @field_validator("job_functions")
+    @classmethod
+    def clean_job_functions(cls, value: list[str]) -> list[str]:
+        cleaned = list(dict.fromkeys(f.strip() for f in value if f.strip()))
+        if not cleaned:
+            raise ValueError("at least one job function is required")
+        return cleaned
 
 
 class Job(BaseModel):

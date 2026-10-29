@@ -1,25 +1,25 @@
 import { type FormEvent } from 'react'
 import { Icon } from '../../icons'
-import type { EmploymentType, ExperienceLevel, Job, WorkArrangement } from '../../types'
+import type { ExperienceLevel, Job, JobType, WorkModel } from '../../types'
 import CompanyLogo from './CompanyLogo'
 import FitPanel from './FitPanel'
 import { useJobSearch } from './useJobSearch'
 
-const WORK_ARRANGEMENTS: { value: WorkArrangement; label: string }[] = [
+const WORK_MODELS: { value: WorkModel | 'any'; label: string }[] = [
   { value: 'any', label: 'Any' },
   { value: 'remote', label: 'Remote' },
   { value: 'onsite', label: 'On-site' },
   { value: 'hybrid', label: 'Hybrid' },
 ]
 
-const EXPERIENCE_LEVELS: { value: ExperienceLevel; label: string }[] = [
+const EXPERIENCE_LEVELS: { value: ExperienceLevel | 'any'; label: string }[] = [
   { value: 'any', label: 'Any' },
   { value: 'entry', label: 'Entry level' },
   { value: 'mid', label: 'Mid level' },
   { value: 'senior', label: 'Senior' },
 ]
 
-const EMPLOYMENT_TYPES: { value: EmploymentType; label: string }[] = [
+const JOB_TYPES: { value: JobType | 'any'; label: string }[] = [
   { value: 'any', label: 'Any' },
   { value: 'full_time', label: 'Full-time' },
   { value: 'part_time', label: 'Part-time' },
@@ -27,8 +27,9 @@ const EMPLOYMENT_TYPES: { value: EmploymentType; label: string }[] = [
   { value: 'internship', label: 'Internship' },
 ]
 
-function toNumberOrNull(value: string): number | null {
-  return value === '' ? null : Number(value)
+// Each select picks one value; the request takes a list, where empty means any.
+function toList<T extends string>(value: T | 'any'): T[] {
+  return value === 'any' ? [] : [value]
 }
 
 export default function JobSearchView({ onPracticeInterview }: { onPracticeInterview: (job: Job) => void }) {
@@ -52,8 +53,8 @@ export default function JobSearchView({ onPracticeInterview }: { onPracticeInter
           <label className="field">
             <span className="field-label">Role</span>
             <input
-              value={f.role}
-              onChange={(e) => js.setFilter('role', e.target.value)}
+              value={f.job_functions[0] ?? ''}
+              onChange={(e) => js.setFilter('job_functions', [e.target.value])}
               placeholder="e.g. Frontend Developer"
             />
           </label>
@@ -80,10 +81,10 @@ export default function JobSearchView({ onPracticeInterview }: { onPracticeInter
           <label className="field">
             <span className="field-label">Work arrangement</span>
             <select
-              value={f.work_arrangement}
-              onChange={(e) => js.setFilter('work_arrangement', e.target.value as WorkArrangement)}
+              value={f.work_models[0] ?? 'any'}
+              onChange={(e) => js.setFilter('work_models', toList(e.target.value as WorkModel | 'any'))}
             >
-              {WORK_ARRANGEMENTS.map((o) => (
+              {WORK_MODELS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
@@ -94,8 +95,8 @@ export default function JobSearchView({ onPracticeInterview }: { onPracticeInter
           <label className="field">
             <span className="field-label">Experience level</span>
             <select
-              value={f.experience_level}
-              onChange={(e) => js.setFilter('experience_level', e.target.value as ExperienceLevel)}
+              value={f.experience_levels[0] ?? 'any'}
+              onChange={(e) => js.setFilter('experience_levels', toList(e.target.value as ExperienceLevel | 'any'))}
             >
               {EXPERIENCE_LEVELS.map((o) => (
                 <option key={o.value} value={o.value}>
@@ -108,54 +109,17 @@ export default function JobSearchView({ onPracticeInterview }: { onPracticeInter
           <label className="field">
             <span className="field-label">Employment type</span>
             <select
-              value={f.employment_type}
-              onChange={(e) => js.setFilter('employment_type', e.target.value as EmploymentType)}
+              value={f.job_types[0] ?? 'any'}
+              onChange={(e) => js.setFilter('job_types', toList(e.target.value as JobType | 'any'))}
             >
-              {EMPLOYMENT_TYPES.map((o) => (
+              {JOB_TYPES.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
               ))}
             </select>
           </label>
-
-          <label className="field">
-            <span className="field-label">Industry (optional)</span>
-            <input
-              value={f.industry}
-              onChange={(e) => js.setFilter('industry', e.target.value)}
-              placeholder="e.g. Healthcare"
-            />
-          </label>
-
-          <fieldset className="field salary">
-            <legend className="field-label">Yearly salary, USD (optional)</legend>
-            <div className="salary-inputs">
-              <input
-                type="number"
-                min={0}
-                step={1000}
-                aria-label="Minimum salary"
-                placeholder="Min"
-                value={f.salary_min ?? ''}
-                onChange={(e) => js.setFilter('salary_min', toNumberOrNull(e.target.value))}
-              />
-              <span aria-hidden="true">to</span>
-              <input
-                type="number"
-                min={0}
-                step={1000}
-                aria-label="Maximum salary"
-                placeholder="Max"
-                value={f.salary_max ?? ''}
-                onChange={(e) => js.setFilter('salary_max', toNumberOrNull(e.target.value))}
-              />
-            </div>
-          </fieldset>
         </div>
-        <p className="filter-note">
-          Salary filtering only applies to postings that list pay, so jobs without a listed salary still appear.
-        </p>
       </form>
 
       {js.searchError && (

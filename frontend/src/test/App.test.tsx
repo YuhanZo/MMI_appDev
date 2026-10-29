@@ -213,14 +213,11 @@ describe('App', () => {
       const call = fetchMock.mock.calls.find(([url]) => url === '/api/jobs/search')
       expect(call).toBeDefined()
       expect(JSON.parse(String(call![1]?.body))).toEqual({
-        role: 'Software Engineer Intern',
         location: 'Columbus, OH',
-        work_arrangement: 'any',
-        experience_level: 'any',
-        employment_type: 'any',
-        salary_min: null,
-        salary_max: null,
-        industry: '',
+        job_functions: ['Software Engineer Intern'],
+        experience_levels: [],
+        job_types: [],
+        work_models: [],
       })
     })
   })
@@ -456,36 +453,17 @@ describe('App', () => {
     await user.selectOptions(screen.getByLabelText('Work arrangement'), 'Hybrid')
     await user.selectOptions(screen.getByLabelText('Experience level'), 'Entry level')
     await user.selectOptions(screen.getByLabelText('Employment type'), 'Internship')
-    await user.type(screen.getByLabelText('Industry (optional)'), 'Healthcare')
-    await user.type(screen.getByLabelText('Minimum salary'), '50000')
     await user.click(screen.getByRole('button', { name: 'Search jobs' }))
 
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(([url]) => url === '/api/jobs/search')
       expect(call).toBeDefined()
       expect(JSON.parse(String(call![1]?.body))).toMatchObject({
-        work_arrangement: 'hybrid',
-        experience_level: 'entry',
-        employment_type: 'internship',
-        industry: 'Healthcare',
-        salary_min: 50000,
-        salary_max: null,
+        work_models: ['hybrid'],
+        experience_levels: ['entry'],
+        job_types: ['internship'],
       })
     })
-  })
-
-  it('blocks a salary range where min is above max', async () => {
-    const fetchMock = mockApi()
-    const user = userEvent.setup()
-    render(<App />)
-    await openJobSearch(user)
-
-    await user.type(screen.getByLabelText('Minimum salary'), '90000')
-    await user.type(screen.getByLabelText('Maximum salary'), '50000')
-    await user.click(screen.getByRole('button', { name: 'Search jobs' }))
-
-    expect(await screen.findByRole('alert')).toHaveTextContent(/Minimum salary/)
-    expect(fetchMock.mock.calls.some(([url]) => url === '/api/jobs/search')).toBe(false)
   })
 
   it('runs a question -> answer -> feedback round trip', async () => {

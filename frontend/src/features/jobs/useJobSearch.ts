@@ -14,14 +14,11 @@ function isRateLimited(e: unknown): boolean {
 }
 
 const DEFAULT_FILTERS: JobSearchRequest = {
-  role: 'Software Engineer Intern',
   location: 'Columbus, OH',
-  work_arrangement: 'any',
-  experience_level: 'any',
-  employment_type: 'any',
-  salary_min: null,
-  salary_max: null,
-  industry: '',
+  job_functions: ['Software Engineer Intern'],
+  experience_levels: [],
+  job_types: [],
+  work_models: [],
 }
 
 // Used by JobSearchView; the view stays mounted when hidden, so results survive switching views.
@@ -127,11 +124,6 @@ export function useJobSearch() {
   }
 
   async function search() {
-    if (filters.salary_min !== null && filters.salary_max !== null && filters.salary_min > filters.salary_max) {
-      setSearchError('Minimum salary can’t be higher than maximum salary.')
-      return
-    }
-
     pendingKey.current = null
     queued.current = null
     setWaiting(false)

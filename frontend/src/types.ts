@@ -1,18 +1,18 @@
 // Mirrors ref/prototype-data-format-v0.1.md -- keep in sync with backend/app/schemas.py.
 
-export type WorkArrangement = 'any' | 'remote' | 'onsite' | 'hybrid'
-export type ExperienceLevel = 'any' | 'entry' | 'mid' | 'senior'
-export type EmploymentType = 'any' | 'full_time' | 'part_time' | 'contract' | 'internship'
+export type WorkModel = 'onsite' | 'hybrid' | 'remote'
+export type ExperienceLevel = 'intern' | 'entry' | 'mid' | 'senior' | 'lead' | 'director'
+export type JobType = 'full_time' | 'part_time' | 'contract' | 'internship'
 
+export const MAX_JOB_FUNCTIONS = 5 // each one is a separate JSearch request
+
+// An empty list means "any" for that filter.
 export interface JobSearchRequest {
-  role: string
   location: string
-  work_arrangement: WorkArrangement
-  experience_level: ExperienceLevel
-  employment_type: EmploymentType
-  salary_min: number | null // yearly, USD
-  salary_max: number | null // yearly, USD
-  industry: string
+  job_functions: string[] // 1-5
+  experience_levels: ExperienceLevel[]
+  job_types: JobType[]
+  work_models: WorkModel[]
 }
 
 export interface Job {

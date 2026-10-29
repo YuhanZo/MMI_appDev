@@ -414,30 +414,6 @@
   padding-left: 36px;
 }
 
-.salary {
-  grid-column: span 2;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.salary legend {
-  margin-bottom: 6px;
-}
-
-.salary-inputs {
-  display: flex;
-  align-items: center;
-  gap: var(--aivana-space-2);
-  color: var(--aivana-color-text-secondary);
-}
-
-.filter-note {
-  margin: calc(-1 * var(--aivana-space-1)) 0 0;
-  color: var(--aivana-color-text-secondary);
-  font-size: 12px;
-}
-
 /*Buttons */
 .btn-outline,
 .btn-filled {
@@ -836,10 +812,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .salary {
-    grid-column: auto;
-  }
-
   .fit-panel {
     padding: var(--aivana-space-4);
   }
@@ -848,14 +820,6 @@
 @media (max-width: 380px) {
   .brand-name {
     font-size: 16px;
-  }
-
-  .salary-inputs {
-    flex-wrap: wrap;
-  }
-
-  .salary-inputs input {
-    flex: 1 1 100px;
   }
 
   .match {
