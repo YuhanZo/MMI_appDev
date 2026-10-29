@@ -159,7 +159,7 @@ Both default to canned data, and the interview is still canned, in
         ├── main.tsx           React entry
         ├── App.tsx            shell: top bar, account menu, sidebar, Home, and which
         │                      view is showing
-        ├── features/jobs      job search form + filters, result cards, fit panel
+        ├── features/jobs      job search filter chips, result cards, fit panel
         ├── features/interview setup, five-question session, feedback,
         │                      completion and summary components
         ├── features/profile   editable profile page, saved in the browser
@@ -200,7 +200,7 @@ drift apart.
 
 ```bash
 cd backend && .venv/bin/pytest          # 52 tests
-cd frontend && npm test                 # 42 tests
+cd frontend && npm test                 # 44 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`

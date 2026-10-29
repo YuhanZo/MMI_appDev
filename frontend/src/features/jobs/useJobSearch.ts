@@ -25,8 +25,11 @@ const DEFAULT_FILTERS: JobSearchRequest = {
 export function useJobSearch() {
   const [filters, setFilters] = useState<JobSearchRequest>(DEFAULT_FILTERS)
 
-  function setFilter<K extends keyof JobSearchRequest>(key: K, value: JobSearchRequest[K]) {
-    setFilters((prev) => ({ ...prev, [key]: value }))
+  // Each confirmed filter change runs the search again.
+  function applyFilter<K extends keyof JobSearchRequest>(key: K, value: JobSearchRequest[K]) {
+    const next = { ...filters, [key]: value }
+    setFilters(next)
+    void search(next)
   }
 
   const [jobs, setJobs] = useState<Job[]>([])
@@ -123,7 +126,7 @@ export function useJobSearch() {
     if (selected) void analyze(selected)
   }
 
-  async function search() {
+  async function search(request: JobSearchRequest = filters) {
     pendingKey.current = null
     queued.current = null
     setWaiting(false)
@@ -134,7 +137,7 @@ export function useJobSearch() {
     setAnalyzing(false)
     setSearching(true)
     try {
-      const results = await api.searchJobs(filters)
+      const results = await api.searchJobs(request)
       setJobs(results)
       setSearched(true)
       // Open the top result right away, like the mockup.
@@ -149,7 +152,7 @@ export function useJobSearch() {
 
   return {
     filters,
-    setFilter,
+    applyFilter,
     jobs,
     searched,
     searching,

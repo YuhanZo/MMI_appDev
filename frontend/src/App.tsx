@@ -241,7 +241,10 @@ export default function App() {
           <HomeView onSelect={setView} />
         </section>
         <section hidden={view !== 'jobs'}>
-          <JobSearchView onPracticeInterview={(job) => launchInterview('behavioral', job.company, job.title)} />
+          <JobSearchView
+            active={view === 'jobs'}
+            onPracticeInterview={(job) => launchInterview('behavioral', job.company, job.title)}
+          />
         </section>
         <section hidden={view !== 'behavioral'}>
           <InterviewWorkspace

@@ -1,45 +1,57 @@
-import { type FormEvent } from 'react'
+import { useEffect, useRef } from 'react'
 import { Icon } from '../../icons'
-import type { ExperienceLevel, Job, JobType, WorkModel } from '../../types'
+import { type ExperienceLevel, type Job, type JobType, MAX_JOB_FUNCTIONS, type WorkModel } from '../../types'
 import CompanyLogo from './CompanyLogo'
+import FilterChip, { CheckboxList, TagInput } from './FilterChip'
 import FitPanel from './FitPanel'
+import './jobs.css'
 import { useJobSearch } from './useJobSearch'
 
-const WORK_MODELS: { value: WorkModel | 'any'; label: string }[] = [
-  { value: 'any', label: 'Any' },
-  { value: 'remote', label: 'Remote' },
-  { value: 'onsite', label: 'On-site' },
-  { value: 'hybrid', label: 'Hybrid' },
+const EXPERIENCE_LEVELS: { value: ExperienceLevel; label: string }[] = [
+  { value: 'intern', label: 'Intern/New Grad' },
+  { value: 'entry', label: 'Entry Level' },
+  { value: 'mid', label: 'Mid Level' },
+  { value: 'senior', label: 'Senior Level' },
+  { value: 'lead', label: 'Lead/Staff' },
+  { value: 'director', label: 'Director/Executive' },
 ]
 
-const EXPERIENCE_LEVELS: { value: ExperienceLevel | 'any'; label: string }[] = [
-  { value: 'any', label: 'Any' },
-  { value: 'entry', label: 'Entry level' },
-  { value: 'mid', label: 'Mid level' },
-  { value: 'senior', label: 'Senior' },
-]
-
-const JOB_TYPES: { value: JobType | 'any'; label: string }[] = [
-  { value: 'any', label: 'Any' },
+const JOB_TYPES: { value: JobType; label: string }[] = [
   { value: 'full_time', label: 'Full-time' },
-  { value: 'part_time', label: 'Part-time' },
   { value: 'contract', label: 'Contract' },
+  { value: 'part_time', label: 'Part-time' },
   { value: 'internship', label: 'Internship' },
 ]
 
-// Each select picks one value; the request takes a list, where empty means any.
-function toList<T extends string>(value: T | 'any'): T[] {
-  return value === 'any' ? [] : [value]
+const WORK_MODELS: { value: WorkModel; label: string }[] = [
+  { value: 'onsite', label: 'Onsite' },
+  { value: 'hybrid', label: 'Hybrid' },
+  { value: 'remote', label: 'Remote' },
+]
+
+function labelsOf<V extends string>(options: { value: V; label: string }[], selected: V[]): string[] {
+  return options.filter((o) => selected.includes(o.value)).map((o) => o.label)
 }
 
-export default function JobSearchView({ onPracticeInterview }: { onPracticeInterview: (job: Job) => void }) {
+export default function JobSearchView({
+  active,
+  onPracticeInterview,
+}: {
+  active: boolean
+  onPracticeInterview: (job: Job) => void
+}) {
   const js = useJobSearch()
   const f = js.filters
 
-  function onSubmit(e: FormEvent) {
-    e.preventDefault()
-    void js.search()
-  }
+  // Search with the default filters the first time the view is shown; after that,
+  // each confirmed filter change searches again.
+  const started = useRef(false)
+  useEffect(() => {
+    if (active && !started.current) {
+      started.current = true
+      void js.search()
+    }
+  }, [active, js])
 
   return (
     <>
@@ -48,79 +60,76 @@ export default function JobSearchView({ onPracticeInterview }: { onPracticeInter
         <p className="page-sub">Find openings for a role, then see how well your profile fits each one.</p>
       </div>
 
-      <form className="search-card" role="search" onSubmit={onSubmit}>
-        <div className="search-row">
-          <label className="field">
-            <span className="field-label">Role</span>
-            <input
-              value={f.job_functions[0] ?? ''}
-              onChange={(e) => js.setFilter('job_functions', [e.target.value])}
-              placeholder="e.g. Frontend Developer"
-            />
-          </label>
-
-          <label className="field">
-            <span className="field-label">Location</span>
+      <div className="chip-row" role="search" aria-label="Job filters">
+        <FilterChip
+          heading="Location"
+          value={f.location}
+          labels={f.location.trim() ? [f.location.trim()] : []}
+          disabled={js.searching}
+          onConfirm={(v) => js.applyFilter('location', v.trim())}
+        >
+          {(draft, setDraft) => (
             <span className="input-icon">
               <Icon name="place" size={18} />
               <input
-                value={f.location}
-                onChange={(e) => js.setFilter('location', e.target.value)}
+                className="chip-input"
+                aria-label="City, state or country"
                 placeholder="e.g. Columbus, OH"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
               />
             </span>
-          </label>
+          )}
+        </FilterChip>
 
-          <button type="submit" className="btn-filled btn-search" disabled={js.searching}>
-            <Icon name="search" size={18} />
-            {js.searching ? 'Searching…' : 'Search jobs'}
-          </button>
-        </div>
+        <FilterChip
+          heading="Job Function"
+          value={f.job_functions}
+          labels={f.job_functions}
+          disabled={js.searching}
+          canConfirm={(draft) => draft.length > 0}
+          onConfirm={(v) => js.applyFilter('job_functions', v)}
+        >
+          {(draft, setDraft) => (
+            <TagInput
+              tags={draft}
+              max={MAX_JOB_FUNCTIONS}
+              placeholder="Enter a job function"
+              onChange={setDraft}
+            />
+          )}
+        </FilterChip>
 
-        <div className="filter-row">
-          <label className="field">
-            <span className="field-label">Work arrangement</span>
-            <select
-              value={f.work_models[0] ?? 'any'}
-              onChange={(e) => js.setFilter('work_models', toList(e.target.value as WorkModel | 'any'))}
-            >
-              {WORK_MODELS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
+        <FilterChip
+          heading="Experience Level"
+          value={f.experience_levels}
+          labels={labelsOf(EXPERIENCE_LEVELS, f.experience_levels)}
+          disabled={js.searching}
+          onConfirm={(v) => js.applyFilter('experience_levels', v)}
+        >
+          {(draft, setDraft) => <CheckboxList options={EXPERIENCE_LEVELS} selected={draft} onChange={setDraft} />}
+        </FilterChip>
 
-          <label className="field">
-            <span className="field-label">Experience level</span>
-            <select
-              value={f.experience_levels[0] ?? 'any'}
-              onChange={(e) => js.setFilter('experience_levels', toList(e.target.value as ExperienceLevel | 'any'))}
-            >
-              {EXPERIENCE_LEVELS.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
+        <FilterChip
+          heading="Job Type"
+          value={f.job_types}
+          labels={labelsOf(JOB_TYPES, f.job_types)}
+          disabled={js.searching}
+          onConfirm={(v) => js.applyFilter('job_types', v)}
+        >
+          {(draft, setDraft) => <CheckboxList options={JOB_TYPES} selected={draft} onChange={setDraft} />}
+        </FilterChip>
 
-          <label className="field">
-            <span className="field-label">Employment type</span>
-            <select
-              value={f.job_types[0] ?? 'any'}
-              onChange={(e) => js.setFilter('job_types', toList(e.target.value as JobType | 'any'))}
-            >
-              {JOB_TYPES.map((o) => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </form>
+        <FilterChip
+          heading="Work Model"
+          value={f.work_models}
+          labels={labelsOf(WORK_MODELS, f.work_models)}
+          disabled={js.searching}
+          onConfirm={(v) => js.applyFilter('work_models', v)}
+        >
+          {(draft, setDraft) => <CheckboxList options={WORK_MODELS} selected={draft} onChange={setDraft} />}
+        </FilterChip>
+      </div>
 
       {js.searchError && (
         <p className="error" role="alert">
@@ -128,10 +137,12 @@ export default function JobSearchView({ onPracticeInterview }: { onPracticeInter
         </p>
       )}
 
-      {!js.searched ? (
-        !js.searchError && <p className="empty">Enter a role and select Search jobs to see openings.</p>
+      {js.searching ? (
+        <p className="empty">Searching…</p>
+      ) : !js.searched ? (
+        !js.searchError && <p className="empty">Choose your filters to see openings.</p>
       ) : js.jobs.length === 0 ? (
-        <p className="empty">No jobs matched this search. Try a broader role or another location.</p>
+        <p className="empty">No jobs matched these filters. Try another job function, fewer filters, or another location.</p>
       ) : (
         <>
           <p className="result-count">
