@@ -1,4 +1,4 @@
-import type { DetailedInterviewFeedback } from '../../types'
+import type { InterviewFeedbackDetail } from '../../types'
 import type { ReactNode } from 'react'
 
 function FeedbackBlock({ title, children }: { title: string; children: ReactNode }) {
@@ -20,50 +20,21 @@ function BulletList({ items }: { items: string[] }) {
   )
 }
 
-export default function InterviewFeedback({ feedback }: { feedback: DetailedInterviewFeedback }) {
-  if (feedback.mode === 'behavioral') {
-    return (
-      <>
-        <h2 className="interview-section-title">AI-style Feedback</h2>
-        <FeedbackBlock title="Feedback">
-          <p>{feedback.ai_feedback}</p>
-        </FeedbackBlock>
-        <FeedbackBlock title="Strengths">
-          <BulletList items={feedback.strengths} />
-        </FeedbackBlock>
-        <FeedbackBlock title="Areas to Improve">
-          <BulletList items={feedback.areas_to_improve} />
-        </FeedbackBlock>
-        <FeedbackBlock title="STAR Structure Feedback">
-          <p>{feedback.star_structure}</p>
-        </FeedbackBlock>
-        <FeedbackBlock title="Example Improved Answer">
-          <p>{feedback.improved_answer}</p>
-        </FeedbackBlock>
-      </>
-    )
-  }
-
+export default function InterviewFeedback({ feedback }: { feedback: InterviewFeedbackDetail }) {
   return (
     <>
-      <h2 className="interview-section-title">Technical Feedback</h2>
-      <FeedbackBlock title="Assessment">
-        <span className="interview-assessment-badge">{feedback.assessment}</span>
+      <h2 className="interview-section-title">Score: {feedback.score}/10</h2>
+      <FeedbackBlock title="Feedback">
+        <p>{feedback.feedback}</p>
       </FeedbackBlock>
-      <FeedbackBlock title="Explanation">
-        <p>{feedback.explanation}</p>
+      <FeedbackBlock title="Strengths">
+        <BulletList items={feedback.strengths} />
       </FeedbackBlock>
-      <FeedbackBlock title="Missing Points">
-        <BulletList items={feedback.missing_points} />
+      <FeedbackBlock title="Areas to Improve">
+        <BulletList items={feedback.areas_to_improve} />
       </FeedbackBlock>
-      <FeedbackBlock title="Time Complexity">
-        <p>{feedback.time_complexity}</p>
-      </FeedbackBlock>
-      <FeedbackBlock title="Space Complexity">
-        <p>{feedback.space_complexity}</p>
-      </FeedbackBlock>
-      <FeedbackBlock title="Suggested Solution">
-        <p>{feedback.suggested_solution}</p>
+      <FeedbackBlock title="Improved Answer">
+        <p>{feedback.improved_answer}</p>
       </FeedbackBlock>
     </>
   )

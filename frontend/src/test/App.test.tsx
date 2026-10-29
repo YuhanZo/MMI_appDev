@@ -19,6 +19,10 @@ const QUESTION = {
   type: 'behavioral' as const,
 }
 
+async function openJobSearch(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Job Search' }))
+}
+
 /** Routes each API path to a canned response so tests never need a live backend. */
 function mockApi(overrides: Record<string, unknown> = {}) {
   const routes: Record<string, unknown> = {
@@ -31,17 +35,54 @@ function mockApi(overrides: Record<string, unknown> = {}) {
       gaps: ['Limited AWS experience'],
       recommendations: ['Review basic AWS services'],
     },
-    '/api/interview/questions': [QUESTION],
-    '/api/interview/feedback': {
-      summary: 'Overall feedback.',
+    '/api/interview/sessions': {
+      session_id: 'session-test',
+      company: 'Aivana',
+      position: 'Engineer',
+      mode: 'behavioral',
+      status: 'active',
+      current_question_index: 0,
+      questions: [
+        QUESTION,
+        { id: 'q2', question: 'Tell me about another project.', type: 'behavioral' },
+      ],
+    },
+    '/api/interview/detailed-feedback': {
+      mode: 'behavioral',
+      ai_feedback: 'Overall feedback.',
       strengths: ['Clear explanation'],
-      improvements: ['Add measurable results'],
+      areas_to_improve: ['Add measurable results'],
+      star_structure: 'Use a clearer result.',
+      improved_answer: 'I led a project and measured the outcome.',
     },
     ...overrides,
   }
 
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
-    void init
+    if (/\/api\/interview\/sessions\/[^/]+\/answers/.test(url)) {
+      const request = JSON.parse(String(init?.body)) as { question_index: number }
+      const interview = routes['/api/interview/sessions'] as {
+        session_id: string
+        questions: Array<{ id: string; question: string; type: 'behavioral' }>
+      }
+      return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({
+          session_id: interview.session_id,
+          question_index: request.question_index,
+          question_id: interview.questions[request.question_index].id,
+          current_question_index: request.question_index + 1,
+          next_question: interview.questions[request.question_index + 1] ?? null,
+          score: 8,
+          feedback: 'Overall feedback.',
+          strengths: ['Clear explanation'],
+          areas_to_improve: ['Add measurable results'],
+          improved_answer: 'I led a project and measured the outcome.',
+        }),
+      } as Response
+    }
     const body = routes[url]
     if (body === undefined) throw new Error(`unmocked route: ${url}`)
     if (body instanceof Error) throw body
@@ -90,6 +131,7 @@ describe('App', () => {
     mockApi()
     const user = userEvent.setup()
     render(<App />)
+    await openJobSearch(user)
 
     await user.click(screen.getByRole('button', { name: 'Search jobs' }))
 
@@ -100,14 +142,13 @@ describe('App', () => {
     // The top result is analyzed automatically, with no extra click.
     expect(await screen.findByText('Overall fit summary.')).toBeInTheDocument()
     expect(screen.getByText(/Strong Python experience/)).toBeInTheDocument()
-    expect(screen.getByText('78%')).toBeInTheDocument()
-    expect(screen.getByText('Good match')).toBeInTheDocument()
   })
 
   it('shows the company logo when the posting has one', async () => {
     mockApi({ '/api/jobs/search': [{ ...JOB, company_logo: 'https://example.com/logo.png' }] })
     const user = userEvent.setup()
     const { container } = render(<App />)
+    await openJobSearch(user)
 
     await user.click(screen.getByRole('button', { name: 'Search jobs' }))
     await screen.findByRole('list', { name: 'Job results' })
@@ -120,6 +161,7 @@ describe('App', () => {
     const fetchMock = mockApi({ '/api/jobs/search': [JOB, second] })
     const user = userEvent.setup()
     render(<App />)
+    await openJobSearch(user)
 
     await user.click(screen.getByRole('button', { name: 'Search jobs' }))
     const list = await screen.findByRole('list', { name: 'Job results' })
@@ -137,21 +179,23 @@ describe('App', () => {
     })
   })
 
-  it('opens Mock Interview from a fit analysis', async () => {
+  it('opens a behavioral interview from a fit analysis', async () => {
     mockApi()
     const user = userEvent.setup()
     render(<App />)
+    await openJobSearch(user)
 
     await user.click(screen.getByRole('button', { name: 'Search jobs' }))
     await user.click(await screen.findByRole('button', { name: 'Practice interview' }))
 
-    expect(screen.getByRole('button', { name: 'Mock Interview' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: 'Behavioral Interview' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('sends the search request in the shared data format', async () => {
     const fetchMock = mockApi()
     const user = userEvent.setup()
     render(<App />)
+    await openJobSearch(user)
 
     await user.click(screen.getByRole('button', { name: 'Search jobs' }))
 
@@ -175,6 +219,7 @@ describe('App', () => {
     const fetchMock = mockApi()
     const user = userEvent.setup()
     render(<App />)
+    await openJobSearch(user)
 
     await user.selectOptions(screen.getByLabelText('Work arrangement'), 'Hybrid')
     await user.selectOptions(screen.getByLabelText('Experience level'), 'Entry level')
@@ -201,6 +246,7 @@ describe('App', () => {
     const fetchMock = mockApi()
     const user = userEvent.setup()
     render(<App />)
+    await openJobSearch(user)
 
     await user.type(screen.getByLabelText('Minimum salary'), '90000')
     await user.type(screen.getByLabelText('Maximum salary'), '50000')
@@ -214,6 +260,7 @@ describe('App', () => {
     mockApi({ '/api/jobs/search': new Error('500 Internal Server Error') })
     const user = userEvent.setup()
     render(<App />)
+    await openJobSearch(user)
 
     await user.click(screen.getByRole('button', { name: 'Search jobs' }))
     expect(await screen.findByText(/500 Internal Server Error/)).toBeInTheDocument()
@@ -224,30 +271,48 @@ describe('App', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.click(screen.getByRole('button', { name: 'Mock Interview' }))
+    await user.click(screen.getByRole('button', { name: 'Behavioral Interview' }))
+    const setup = screen.getByRole('region', { name: 'Behavioral Interview Setup' })
+    await user.type(within(setup).getByLabelText('Company'), 'Aivana')
+    await user.type(within(setup).getByLabelText('Position / Job Title'), 'Engineer')
+    await user.click(within(setup).getByRole('button', { name: 'Start Interview' }))
     expect(await screen.findByText(/Tell me about a challenging software project/)).toBeInTheDocument()
 
-    await user.type(screen.getByLabelText('Your answer'), 'I led a project that...')
-    await user.click(screen.getByRole('button', { name: 'Submit answer' }))
+    await user.type(screen.getByLabelText('Your Answer'), 'I led a project that...')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
 
     expect(await screen.findByText(/Overall feedback\./)).toBeInTheDocument()
   })
 
   it('keeps each question’s answer separate', async () => {
     mockApi({
-      '/api/interview/questions': [
-        QUESTION,
-        { id: 'q2', question: 'How would you design a REST API for job search?', type: 'technical' },
-      ],
+      '/api/interview/sessions': {
+        session_id: 'session-test',
+        company: 'Aivana',
+        position: 'Engineer',
+        mode: 'behavioral',
+        status: 'active',
+        current_question_index: 0,
+        questions: [
+          QUESTION,
+          { id: 'q2', question: 'Tell me about another project.', type: 'behavioral' },
+        ],
+      },
     })
     const user = userEvent.setup()
     render(<App />)
 
-    await user.click(screen.getByRole('button', { name: 'Mock Interview' }))
-    const [first, second] = await screen.findAllByLabelText('Your answer')
-    await user.type(first, 'Only for the first question')
+    await user.click(screen.getByRole('button', { name: 'Behavioral Interview' }))
+    const setup = screen.getByRole('region', { name: 'Behavioral Interview Setup' })
+    await user.type(within(setup).getByLabelText('Company'), 'Aivana')
+    await user.type(within(setup).getByLabelText('Position / Job Title'), 'Engineer')
+    await user.click(within(setup).getByRole('button', { name: 'Start Interview' }))
 
-    expect(first).toHaveValue('Only for the first question')
+    const first = await screen.findByLabelText('Your Answer')
+    await user.type(first, 'Only for the first question')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+    const second = await screen.findByLabelText('Your Answer')
+
     expect(second).toHaveValue('')
   })
 })

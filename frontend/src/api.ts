@@ -1,10 +1,14 @@
 import type {
+  CreateInterviewSessionRequest,
+  CreatedInterviewSession,
   DetailedFeedbackRequest,
   DetailedInterviewFeedback,
   FitAnalysisRequest,
   FitAnalysisResult,
   InterviewAnswer,
   InterviewFeedback,
+  InterviewTurnAnswerRequest,
+  InterviewTurnEvaluated,
   InterviewMode,
   InterviewQuestion,
   InterviewSummary,
@@ -52,11 +56,17 @@ export const getQuestions = (mode?: InterviewMode) =>
     `/api/interview/questions${mode ? `?mode=${encodeURIComponent(mode)}` : ''}`,
   )
 
+export const createInterviewSession = (req: CreateInterviewSessionRequest) =>
+  post<CreatedInterviewSession>('/api/interview/sessions', req)
+
+export const submitInterviewAnswer = (sessionId: string, req: InterviewTurnAnswerRequest) =>
+  post<InterviewTurnEvaluated>(`/api/interview/sessions/${encodeURIComponent(sessionId)}/answers`, req)
+
 export const getFeedback = (answer: InterviewAnswer) =>
   post<InterviewFeedback>('/api/interview/feedback', answer)
 
 export const getDetailedFeedback = (answer: DetailedFeedbackRequest) =>
   post<DetailedInterviewFeedback>('/api/interview/detailed-feedback', answer)
 
-export const getInterviewSummary = (mode: InterviewMode) =>
-  request<InterviewSummary>(`/api/interview/summary?mode=${encodeURIComponent(mode)}`)
+export const getInterviewSummary = (sessionId: string) =>
+  post<InterviewSummary>(`/api/interview/sessions/${encodeURIComponent(sessionId)}/summary`, undefined)

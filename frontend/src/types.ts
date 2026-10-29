@@ -49,6 +49,45 @@ export interface InterviewQuestion {
   type: 'behavioral' | 'technical' | 'general'
 }
 
+export interface CreateInterviewSessionRequest {
+  company: string
+  position: string
+  mode: InterviewMode
+}
+
+export interface CreatedInterviewSession {
+  session_id: string
+  company: string
+  position: string
+  mode: InterviewMode
+  status: 'active'
+  current_question_index: number
+  questions: InterviewQuestion[]
+}
+
+export interface InterviewFeedbackDetail {
+  score: number
+  feedback: string
+  strengths: string[]
+  areas_to_improve: string[]
+  improved_answer: string
+}
+
+export interface InterviewTurnAnswerRequest {
+  question_index: number
+  answer: string
+  answer_type: InterviewAnswerType
+  language: string | null
+}
+
+export interface InterviewTurnEvaluated extends InterviewFeedbackDetail {
+  session_id: string
+  question_index: number
+  question_id: string
+  current_question_index: number
+  next_question: InterviewQuestion | null
+}
+
 export interface InterviewAnswer {
   question_id: string
   answer: string
@@ -95,9 +134,17 @@ export interface TechnicalDetailedFeedback {
 export type DetailedInterviewFeedback = BehavioralDetailedFeedback | TechnicalDetailedFeedback
 
 export interface InterviewSummary {
-  overall_performance: string
+  session_id: string
+  overall_evaluation: string
   strong_areas: string[]
   areas_to_improve: string[]
-  question_results: Array<{ question: string; result: string }>
+  total_score: number
+  average_score: number
+  question_results: Array<{
+    question: string
+    answer: string
+    score: number
+    feedback: string
+  }>
   suggested_next_steps: string[]
 }

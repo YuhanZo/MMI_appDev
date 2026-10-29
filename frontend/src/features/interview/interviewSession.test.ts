@@ -4,6 +4,7 @@ import { createCrossModeSessionState, createSetupResetState } from './sessionSta
 describe('interview session state', () => {
   it('returns to a clean setup for the selected mode', () => {
     expect(createSetupResetState('technical')).toEqual({
+      sessionId: null,
       mode: 'technical',
       company: '',
       position: '',
@@ -19,6 +20,7 @@ describe('interview session state', () => {
 
   it('preserves role details and starts a clean cross-mode session', () => {
     expect(createCrossModeSessionState('Aivana', 'Engineer', 'behavioral')).toEqual({
+      sessionId: null,
       mode: 'behavioral',
       company: 'Aivana',
       position: 'Engineer',

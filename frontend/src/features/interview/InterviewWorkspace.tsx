@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import * as api from '../../api'
 import type {
   InterviewAnswerType,
@@ -36,34 +36,51 @@ export default function InterviewWorkspace({
   const [session, setSession] = useState<InterviewSessionState>(() => createSetupResetState(mode))
   const [questions, setQuestions] = useState<InterviewQuestion[]>([])
   const [summary, setSummary] = useState<InterviewSummaryData | null>(null)
+  const [starting, setStarting] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const lastLaunchNonce = useRef<number | null>(null)
 
-  useEffect(() => {
-    let active = true
-    api
-      .getQuestions(mode)
-      .then((result) => {
-        if (active) setQuestions(result)
+  const beginInterview = useCallback(async (company: string, position: string) => {
+    setSummary(null)
+    setStarting(true)
+    setSession((current) => ({ ...current, error: '' }))
+    try {
+      const result = await api.createInterviewSession({
+        company: company.trim(),
+        position: position.trim(),
+        mode,
       })
-      .catch((error) => {
-        if (active) setSession((current) => ({ ...current, error: String(error) }))
+      setQuestions(result.questions)
+      setSession({
+        ...createCrossModeSessionState(
+          result.company,
+          result.position,
+          result.mode,
+          result.session_id,
+        ),
+        currentQuestion: result.current_question_index,
       })
-    return () => {
-      active = false
+    } catch (error) {
+      setSession((current) => ({
+        ...current,
+        company,
+        position,
+        stage: 'setup',
+        error: String(error),
+      }))
+    } finally {
+      setStarting(false)
     }
   }, [mode])
 
   useEffect(() => {
     if (!launchRequest || launchRequest.nonce === lastLaunchNonce.current) return
     lastLaunchNonce.current = launchRequest.nonce
-    setSummary(null)
-    setSession(createCrossModeSessionState(launchRequest.company, launchRequest.position, mode))
-  }, [launchRequest, mode])
+    void beginInterview(launchRequest.company, launchRequest.position)
+  }, [beginInterview, launchRequest])
 
   const question = questions[session.currentQuestion]
   const currentAnswer = question ? session.answers[question.id]?.value ?? '' : ''
-  const currentFeedback = question ? session.feedback[question.id] : undefined
   const modeLabel = mode === 'behavioral' ? 'Behavioral' : 'Technical'
 
   function updateSession(patch: Partial<InterviewSessionState>) {
@@ -71,8 +88,7 @@ export default function InterviewWorkspace({
   }
 
   function startInterview() {
-    setSummary(null)
-    setSession(createCrossModeSessionState(session.company.trim(), session.position.trim(), mode))
+    void beginInterview(session.company, session.position)
   }
 
   function updateAnswer(value: string) {
@@ -127,21 +143,21 @@ export default function InterviewWorkspace({
   }
 
   async function submitAnswer() {
-    if (!question || !currentAnswer.trim()) return
+    if (submitting || !session.sessionId || !question || !currentAnswer.trim()) return
     setSubmitting(true)
     updateSession({ error: '' })
     try {
-      const result = await api.getDetailedFeedback({
-        question_id: question.id,
+      const result = await api.submitInterviewAnswer(session.sessionId, {
+        question_index: session.currentQuestion,
         answer: currentAnswer,
         answer_type: session.answerType,
         language: mode === 'technical' && session.answerType === 'code' ? session.language : null,
-        company: session.company,
-        position: session.position,
       })
       setSession((current) => ({
         ...current,
         feedback: { ...current.feedback, [question.id]: result },
+        currentQuestion: result.current_question_index,
+        stage: result.current_question_index >= questions.length ? 'complete' : 'session',
       }))
     } catch (error) {
       updateSession({ error: String(error) })
@@ -150,27 +166,11 @@ export default function InterviewWorkspace({
     }
   }
 
-  function previousQuestion() {
-    setSession((current) => ({
-      ...current,
-      currentQuestion: Math.max(0, current.currentQuestion - 1),
-      error: '',
-    }))
-  }
-
-  function nextQuestion() {
-    setSession((current) => {
-      if (current.currentQuestion >= questions.length - 1) {
-        return { ...current, stage: 'complete', error: '' }
-      }
-      return { ...current, currentQuestion: current.currentQuestion + 1, error: '' }
-    })
-  }
-
   async function showSummary() {
+    if (!session.sessionId) return
     updateSession({ error: '' })
     try {
-      const result = await api.getInterviewSummary(mode)
+      const result = await api.getInterviewSummary(session.sessionId)
       setSummary(result)
       updateSession({ stage: 'summary' })
     } catch (error) {
@@ -180,12 +180,12 @@ export default function InterviewWorkspace({
 
   function resetToSetup() {
     setSummary(null)
+    setQuestions([])
     setSession(createSetupResetState(mode))
   }
 
   function restartInterview() {
-    setSummary(null)
-    setSession(createCrossModeSessionState(session.company, session.position, mode))
+    void beginInterview(session.company, session.position)
   }
 
   const otherMode: InterviewMode = mode === 'behavioral' ? 'technical' : 'behavioral'
@@ -196,7 +196,7 @@ export default function InterviewWorkspace({
         <div>
           <p className="interview-eyebrow">Aivana MMI Frontend Prototype</p>
           <h1>{modeLabel} Interview</h1>
-          <p>Practice five {modeLabel.toLowerCase()} questions with prepared AI-style feedback.</p>
+          <p>Practice five {modeLabel.toLowerCase()} questions with real Aivana feedback.</p>
         </div>
         <div className="interview-header-meta">
           {session.stage !== 'setup' && (
@@ -218,6 +218,7 @@ export default function InterviewWorkspace({
             mode={mode}
             company={session.company}
             position={session.position}
+            starting={starting}
             onCompanyChange={(company) => updateSession({ company, error: '' })}
             onPositionChange={(position) => updateSession({ position, error: '' })}
             onStart={startInterview}
@@ -230,21 +231,19 @@ export default function InterviewWorkspace({
           mode={mode}
           company={session.company}
           position={session.position}
-          question={question}
+          questions={questions}
           questionIndex={session.currentQuestion}
-          questionCount={questions.length}
+          answers={session.answers}
+          feedback={session.feedback}
           answer={currentAnswer}
           answerType={session.answerType}
           language={session.language}
-          feedback={currentFeedback}
           error={session.error}
           submitting={submitting}
           onAnswerChange={updateAnswer}
           onAnswerTypeChange={updateAnswerType}
           onLanguageChange={updateLanguage}
           onSubmit={submitAnswer}
-          onPrevious={previousQuestion}
-          onNext={nextQuestion}
         />
       )}
 
@@ -255,19 +254,40 @@ export default function InterviewWorkspace({
       )}
 
       {session.stage === 'complete' && (
-        <section className="interview-panel interview-completion-panel" aria-label="Interview complete">
-          <h2>Interview Complete</h2>
-          <p>You completed five mock questions for {session.company} · {session.position}.</p>
-          {session.error && <p className="interview-error" role="alert">{session.error}</p>}
-          <div className="interview-actions">
-            <button type="button" className="interview-primary-button" onClick={restartInterview}>
-              Generate 5 More Questions
-            </button>
-            <button type="button" className="interview-secondary-button" onClick={showSummary}>
-              View Interview Summary
-            </button>
-          </div>
-        </section>
+        <>
+          <InterviewSession
+            mode={mode}
+            company={session.company}
+            position={session.position}
+            questions={questions}
+            questionIndex={questions.length - 1}
+            answers={session.answers}
+            feedback={session.feedback}
+            answer=""
+            answerType={session.answerType}
+            language={session.language}
+            error=""
+            submitting={false}
+            completed
+            onAnswerChange={updateAnswer}
+            onAnswerTypeChange={updateAnswerType}
+            onLanguageChange={updateLanguage}
+            onSubmit={submitAnswer}
+          />
+          <section className="interview-panel interview-completion-panel" aria-label="Interview complete">
+            <h2>Interview Complete</h2>
+            <p>You completed five interview questions for {session.company} · {session.position}.</p>
+            {session.error && <p className="interview-error" role="alert">{session.error}</p>}
+            <div className="interview-actions">
+              <button type="button" className="interview-primary-button" onClick={restartInterview}>
+                Generate 5 More Questions
+              </button>
+              <button type="button" className="interview-secondary-button" onClick={showSummary}>
+                View Interview Summary
+              </button>
+            </div>
+          </section>
+        </>
       )}
 
       {session.stage === 'summary' && summary && (
