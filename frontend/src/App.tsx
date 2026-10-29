@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import * as api from './api'
+import BenchmarkView from './features/benchmark/BenchmarkView'
 import InterviewWorkspace, {
   type InterviewLaunchRequest,
 } from './features/interview/InterviewWorkspace'
@@ -12,13 +13,14 @@ import type { InterviewMode } from './types'
 // Display-only user info for the account menu (no sign-in yet)
 const DEMO_USER = { name: 'Demo User', initials: 'DU' }
 
-type View = 'home' | 'jobs' | 'behavioral' | 'technical' | 'profile'
+type View = 'home' | 'jobs' | 'behavioral' | 'technical' | 'benchmark' | 'profile'
 
 const NAV: { view: View; label: string; icon: IconName }[] = [
   { view: 'home', label: 'Home', icon: 'sparkle' },
   { view: 'jobs', label: 'Job Search', icon: 'work' },
   { view: 'behavioral', label: 'Behavioral Interview', icon: 'mic' },
   { view: 'technical', label: 'Technical Interview', icon: 'search' },
+  { view: 'benchmark', label: 'Benchmark', icon: 'chart' },
 ]
 
 const HOME_OPTIONS: { view: View; title: string; description: string; icon: IconName }[] = [
@@ -258,6 +260,9 @@ export default function App() {
             launchRequest={interviewLaunch?.mode === 'technical' ? interviewLaunch : null}
             onTryOtherMode={launchInterview}
           />
+        </section>
+        <section hidden={view !== 'benchmark'}>
+          <BenchmarkView />
         </section>
         <section hidden={view !== 'profile'}>
           <ProfileView />

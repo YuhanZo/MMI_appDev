@@ -187,6 +187,18 @@ describe('App', () => {
     expect(await screen.findByText(/backend unreachable/)).toBeInTheDocument()
   })
 
+  it('opens the Benchmark from the sidebar, below Technical Interview', async () => {
+    mockApi()
+    const user = userEvent.setup()
+    render(<App />)
+
+    const nav = screen.getByRole('navigation', { name: 'Sections' })
+    const items = within(nav).getAllByRole('button').map((b) => b.textContent)
+    expect(items.slice(-2)).toEqual(['Technical Interview', 'Benchmark'])
+    await user.click(within(nav).getByRole('button', { name: 'Benchmark' }))
+    expect(screen.getByRole('heading', { name: 'Benchmark' })).toBeVisible()
+  })
+
   it('renders search results and analyzes the top result', async () => {
     mockApi()
     const user = userEvent.setup()

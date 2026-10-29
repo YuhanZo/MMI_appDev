@@ -173,6 +173,8 @@ SQLite.
         ├── features/interview setup, five-question session, feedback,
         │                      completion and summary components
         ├── features/profile   editable profile page and resume upload, saved in the browser
+        ├── features/benchmark Aivana vs a general model: side-by-side cards, ratings,
+        │                      results table saved in the browser
         ├── App.css            layout and component styles (Google Drive-inspired)
         ├── index.css          color tokens (light + dark), base styles
         ├── icons.tsx          inline SVG icons
