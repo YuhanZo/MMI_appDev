@@ -336,108 +336,6 @@
   transform: rotate(-90deg);
 }
 
-.search-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--aivana-space-4);
-  margin-bottom: var(--aivana-space-6);
-  padding: var(--aivana-space-4);
-  border: 1px solid var(--aivana-color-border-hairline);
-  border-radius: var(--aivana-radius-lg);
-  background: var(--aivana-color-surface-card);
-}
-
-.search-row {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr) auto;
-  align-items: end;
-  gap: var(--aivana-space-3);
-}
-
-.filter-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  align-items: end;
-  gap: var(--aivana-space-3);
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.field-label {
-  padding: 0;
-  color: var(--aivana-color-text-secondary);
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.field input,
-.field select {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: var(--aivana-touch-preferred);
-  padding: 0 var(--aivana-space-3);
-  border: 1px solid var(--aivana-color-border-control);
-  border-radius: var(--aivana-radius-md);
-  background: var(--aivana-color-surface-field);
-  color: var(--aivana-color-text-primary);
-}
-
-.field input::placeholder {
-  color: var(--aivana-color-text-placeholder);
-}
-
-.field input:focus-visible,
-.field select:focus-visible {
-  outline: var(--aivana-focus-ring);
-  outline-offset: 0;
-}
-
-.input-icon {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.input-icon svg {
-  position: absolute;
-  left: 10px;
-  color: var(--aivana-color-text-secondary);
-  pointer-events: none;
-}
-
-.field .input-icon input {
-  padding-left: 36px;
-}
-
-.salary {
-  grid-column: span 2;
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.salary legend {
-  margin-bottom: 6px;
-}
-
-.salary-inputs {
-  display: flex;
-  align-items: center;
-  gap: var(--aivana-space-2);
-  color: var(--aivana-color-text-secondary);
-}
-
-.filter-note {
-  margin: calc(-1 * var(--aivana-space-1)) 0 0;
-  color: var(--aivana-color-text-secondary);
-  font-size: 12px;
-}
-
 /*Buttons */
 .btn-outline,
 .btn-filled {
@@ -476,10 +374,6 @@
 .btn-filled:disabled,
 .btn-outline:disabled {
   opacity: 0.6;
-}
-
-.btn-search {
-  white-space: nowrap;
 }
 
 .result-count {
@@ -669,15 +563,6 @@
   gap: var(--aivana-space-3);
 }
 
-.next-steps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--aivana-space-2);
-  margin-top: var(--aivana-space-4);
-  padding-top: var(--aivana-space-4);
-  border-top: 1px solid var(--aivana-color-border-hairline);
-}
-
 .tile {
   padding: var(--aivana-space-3) var(--aivana-space-4);
   border: 1px solid var(--aivana-color-border-hairline);
@@ -832,14 +717,6 @@
     padding: var(--aivana-space-3) var(--aivana-space-4) var(--aivana-space-4);
   }
 
-  .search-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .salary {
-    grid-column: auto;
-  }
-
   .fit-panel {
     padding: var(--aivana-space-4);
   }
@@ -848,14 +725,6 @@
 @media (max-width: 380px) {
   .brand-name {
     font-size: 16px;
-  }
-
-  .salary-inputs {
-    flex-wrap: wrap;
-  }
-
-  .salary-inputs input {
-    flex: 1 1 100px;
   }
 
   .match {

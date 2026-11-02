@@ -1,5 +1,7 @@
 # MMI_appDev
 
+[![CI](https://github.com/YuhanZo/MMI_appDev/actions/workflows/ci.yml/badge.svg)](https://github.com/YuhanZo/MMI_appDev/actions/workflows/ci.yml)
+
 Career Decision Assistant — a CSE 5911 capstone app built on the Aivana
 Multi-Model Intelligence (MMI) API. React (Vite) frontend, FastAPI backend,
 SQLite by default.
@@ -119,6 +121,7 @@ SQLite.
 ├── README.md                  you are here
 ├── dev.sh                     start backend + frontend together (`make dev` calls it)
 ├── Makefile
+├── .github/workflows/ci.yml   CI: backend pytest; frontend test, build, lint
 ├── ref/
 │   ├── overview.txt           Aivana's project brief
 │   └── prototype-data-format-v0.1.md   shared request/response format (source of truth)
@@ -159,7 +162,7 @@ SQLite.
         ├── main.tsx           React entry
         ├── App.tsx            shell: top bar, account menu, sidebar, Home, and which
         │                      view is showing
-        ├── features/jobs      job search form + filters, result cards, fit panel
+        ├── features/jobs      job search filter chips, result cards, fit panel
         ├── features/interview setup, five-question session, feedback,
         │                      completion and summary components
         ├── features/profile   editable profile page, saved in the browser
@@ -189,7 +192,7 @@ drift apart.
 | Method | Path | Returns |
 | --- | --- | --- |
 | GET | `/api/health` | runs `SELECT 1`; `200 {status: ok, database: <dialect>}`, or `503` if the database is unreachable |
-| POST | `/api/jobs/search` | `Job[]` from JSearch when `JOB_API_MODE=jsearch`, canned otherwise; filters: role, location, work arrangement, experience, employment type, salary, industry; logs the search to the DB; `502 {detail: {message, code}}` if JSearch fails |
+| POST | `/api/jobs/search` | `Job[]` from JSearch when `JOB_API_MODE=jsearch`, canned otherwise; filters: location, job functions (1-5, one JSearch request each), experience levels, job types, work models; logs the search to the DB; `502 {detail: {message, code}}` if JSearch fails |
 | POST | `/api/jobs/fit-analysis` | `FitAnalysisResult` from Aivana in live mode (8-20 s), canned in mock mode; `502 {detail: {message, code, request_id}}` if Aivana fails |
 | POST | `/api/interview/sessions` | creates a persisted session and returns exactly five distinct Aivana-generated questions for the supplied company, position, and mode; requires `AIVANA_MODE=live` |
 | POST | `/api/interview/sessions/{session_id}/answers` | evaluates the current answer with Aivana, persists its 0–10 score and structured feedback, then advances the persisted question index |
@@ -202,12 +205,17 @@ drift apart.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 48 tests
-cd frontend && npm test                 # 30 tests
+cd backend && .venv/bin/pytest          # 52 tests
+cd frontend && npm test                 # 46 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`
 and `cd frontend; npm test -- --run`.
+
+CI (`.github/workflows/ci.yml`) runs the same checks on every pull request and
+on pushes to `main`: backend `pytest`, and frontend `npm test`, `npm run build`
+(type check) and `npm run lint`. No secrets are needed, since the tests run in
+mock mode.
 
 Neither suite needs a running server. Backend tests swap `app.state.engine`
 for a fresh throwaway SQLite file per test, so the configured database
@@ -244,7 +252,13 @@ JSON template in the prompt and `output_shape: "extract"`, then validates
 Aivana's `structured` reply against `FitAnalysisResult`. A wrong shape is
 retried once, then returned as 502 `bad_output`. Transport retries and the
 format retry share one budget per analysis: **at most 3 Aivana calls within
-90 s**, and each request's timeout is capped by the time left. (The template must be in the
+90 s**, and each request's timeout is capped by the time left. The frontend
+reuses a finished analysis when the exact same job and profile would be sent,
+and joins one that is still running, so re-opening a job doesn't spend another
+(rate-limited) request. It also runs one analysis at a time, since Aivana caps
+concurrent requests: a job clicked meanwhile waits, and only the last one
+clicked runs next. If Aivana still reports a rate or concurrency limit, the panel
+explains it and offers Retry. (The template must be in the
 prompt: in testing, Aivana ignored format instructions given only in `system`.)
 
 Interview session creation (`backend/app/interview_ai.py`) sends company,
@@ -282,10 +296,12 @@ Set in `backend/.env`:
 | `JOB_API_MODE` | `mock` (default): canned jobs, no key needed. `jsearch`: real listings. |
 | `JSEARCH_API_KEY` | Key from https://www.openwebninja.com/api/jsearch (free tier: 200 requests/month) |
 
-`backend/app/job_api.py` sends role, location, remote, employment type and
-experience level to JSearch, then filters hybrid / on-site and salary (converted
-to yearly) itself. Raw results are cached in `backend/.job_cache/` for 24 h, so
-repeating a search, or changing only salary, doesn't spend a request. With
+`backend/app/job_api.py` sends one request per job function (merging the results),
+with location, job types, experience and remote-only as JSearch parameters. It
+filters on-site / hybrid / mixed work models itself. JSearch only knows "no
+experience", "under 3 years" and "over 3 years", so Senior, Lead/Staff and
+Director/Executive are matched by job title (approximate). Raw results are cached in
+`backend/.job_cache/` for 24 h per request, so repeating a search doesn't spend a request. With
 `JOB_API_MODE=jsearch` and no key, the backend refuses to start. Tests never
 call JSearch: `conftest.py` forces mock mode and fails on any real request.
 

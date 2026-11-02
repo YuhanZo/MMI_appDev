@@ -2,13 +2,16 @@
 
 Only the backend calls this, so the API key never reaches the browser.
 
-Some filters are sent to JSearch as parameters (employment type, experience,
-remote). The ones JSearch can't filter on (hybrid, on-site, salary range) are
-applied here after the results come back
+JSearch takes one text query per request, so each job function is its own request;
+the results are merged. Job types, experience and remote-only are sent as
+parameters. What JSearch can't filter on (on-site, hybrid, a mix of work models,
+senior/lead/director titles) is applied here after the results come back.
 """
 
+import asyncio
 import hashlib
 import json
+import re
 import time
 from pathlib import Path
 from typing import Any, Protocol
@@ -20,35 +23,39 @@ CACHE_DIR = Path(__file__).resolve().parent.parent / ".job_cache"
 CACHE_VERSION = "v2"  
 CACHE_TTL_SECONDS = 24 * 60 * 60
 
-EMPLOYMENT_TYPES = {
+JOB_TYPES = {
     "full_time": "FULLTIME",
     "part_time": "PARTTIME",
     "contract": "CONTRACTOR",
     "internship": "INTERN",
 }
 
-# JSearch only distinguishes "under 3 years" from "more than 3 years", so mid and
-# senior share a value; "senior" is also added to the keywords to separate them.
+# JSearch only distinguishes no experience / under 3 years / more than 3 years, so
+# the upper levels share a value and are told apart by the job title (below).
 EXPERIENCE_REQUIREMENTS = {
-    "entry": "no_experience,under_3_years_experience",
+    "intern": "no_experience",
+    "entry": "under_3_years_experience",
     "mid": "more_than_3_years_experience",
     "senior": "more_than_3_years_experience",
+    "lead": "more_than_3_years_experience",
+    "director": "more_than_3_years_experience",
 }
 
-PERIODS_PER_YEAR = {"HOUR": 2080, "DAY": 260, "WEEK": 52, "MONTH": 12, "YEAR": 1}
+TITLE_PATTERNS = {
+    "senior": r"\b(senior|sr)\b",
+    "lead": r"\b(lead|staff|principal)\b",
+    "director": r"\b(director|head|vp|vice president|chief|executive)\b",
+}
 
 
 class SearchFilters(Protocol):
     """The fields of JobSearchRequest that this module reads."""
 
-    role: str
     location: str
-    work_arrangement: str
-    experience_level: str
-    employment_type: str
-    salary_min: int | None
-    salary_max: int | None
-    industry: str
+    job_functions: list[str]
+    experience_levels: list[str]
+    job_types: list[str]
+    work_models: list[str]
 
 
 class JobApiError(Exception):
@@ -57,70 +64,51 @@ class JobApiError(Exception):
 
 # Building request 
 
-def build_params(req: SearchFilters) -> dict[str, str]:
-    keywords = [req.role.strip()]
-    if req.experience_level == "senior" and "senior" not in req.role.lower():
-        keywords.insert(0, "senior")
-    if req.industry.strip():
-        keywords.append(req.industry.strip())
-    query = " ".join(k for k in keywords if k)
-
+def build_params(req: SearchFilters, job_function: str) -> dict[str, str]:
     location = req.location.strip()
-    params = {"query": f"{query} in {location}" if location else query}
+    params = {"query": f"{job_function} in {location}" if location else job_function}
 
-    if req.work_arrangement == "remote":
+    if req.work_models == ["remote"]:
         params["work_from_home"] = "true"
-    if req.employment_type in EMPLOYMENT_TYPES:
-        params["employment_types"] = EMPLOYMENT_TYPES[req.employment_type]
-    if req.experience_level in EXPERIENCE_REQUIREMENTS:
-        params["job_requirements"] = EXPERIENCE_REQUIREMENTS[req.experience_level]
+    if req.job_types:
+        params["employment_types"] = ",".join(JOB_TYPES[t] for t in sorted(req.job_types))
+    if req.experience_levels:
+        params["job_requirements"] = ",".join(sorted({EXPERIENCE_REQUIREMENTS[e] for e in req.experience_levels}))
     return params
 
 
 # Filters 
 
-def yearly_salary(raw: dict[str, Any]) -> tuple[float | None, float | None]:
-    """The listing's salary range per year, or (None, None) if it isn't listed."""
-    per_year = PERIODS_PER_YEAR.get(str(raw.get("job_salary_period") or "YEAR").upper())
-    if per_year is None:
-        return None, None
-
-    def yearly(value: Any) -> float | None:
-        return float(value) * per_year if isinstance(value, (int, float)) else None
-
-    return yearly(raw.get("job_min_salary")), yearly(raw.get("job_max_salary"))
-
-
-def salary_matches(raw: dict[str, Any], salary_min: int | None, salary_max: int | None) -> bool:
-    low, high = yearly_salary(raw)
-    if low is None and high is None:
-        return True  # Most postings don't list pay; we don't want to exclude them unless the user has a filter
-    low = low if low is not None else high
-    high = high if high is not None else low
-    if salary_min is not None and high < salary_min:
-        return False
-    if salary_max is not None and low > salary_max:
-        return False
-    return True
-
-
-def arrangement_matches(raw: dict[str, Any], work_arrangement: str) -> bool:
-    if work_arrangement in ("any", "remote"):  # remote is filtered by JSearch
+def experience_matches(raw: dict[str, Any], levels: list[str]) -> bool:
+    """Only filters by title when every chosen level is senior or above; lower levels
+    are covered by JSearch's job_requirements, which can't be checked here."""
+    if not levels or any(level not in TITLE_PATTERNS for level in levels):
         return True
+    title = str(raw.get("job_title") or "").lower()
+    return any(re.search(TITLE_PATTERNS[level], title) for level in levels)
+
+
+def work_model_of(raw: dict[str, Any]) -> str:
     listed = str(raw.get("work_arrangement") or "").lower()
-    if work_arrangement == "hybrid":
-        text = " ".join(str(raw.get(k) or "") for k in ("job_title", "job_description")).lower()
-        return "hybrid" in listed or "hybrid" in text
-    # on site
-    return not raw.get("job_is_remote") and "remote" not in listed and "hybrid" not in listed
+    text = " ".join(str(raw.get(k) or "") for k in ("job_title", "job_description")).lower()
+    if "hybrid" in listed or "hybrid" in text:
+        return "hybrid"
+    if raw.get("job_is_remote") or "remote" in listed:
+        return "remote"
+    return "onsite"
+
+
+def work_model_matches(raw: dict[str, Any], work_models: list[str]) -> bool:
+    if not work_models or work_models == ["remote"]:  # remote-only is filtered by JSearch
+        return True
+    return work_model_of(raw) in work_models
 
 
 def filter_listings(listings: list[dict[str, Any]], req: SearchFilters) -> list[dict[str, Any]]:
     return [
         raw
         for raw in listings
-        if arrangement_matches(raw, req.work_arrangement)
-        and salary_matches(raw, req.salary_min, req.salary_max)
+        if work_model_matches(raw, req.work_models) and experience_matches(raw, req.experience_levels)
     ]
 
 
@@ -190,6 +178,16 @@ async def search_jobs(req: SearchFilters, api_key: str) -> list[dict[str, str]]:
     if not api_key:
         raise JobApiError("JSEARCH_API_KEY is not set in backend/.env")
 
-    listings = await _fetch_listings(build_params(req), api_key)
-    jobs = (to_job(raw) for raw in filter_listings(listings, req))
+    batches = await asyncio.gather(
+        *(_fetch_listings(build_params(req, f), api_key) for f in req.job_functions)
+    )
+    # The same posting can come back for several job functions; keep the first.
+    seen: set[Any] = set()
+    merged = []
+    for raw in (raw for batch in batches for raw in batch):
+        if raw.get("job_id") not in seen:
+            seen.add(raw.get("job_id"))
+            merged.append(raw)
+
+    jobs = (to_job(raw) for raw in filter_listings(merged, req))
     return [job for job in jobs if job]

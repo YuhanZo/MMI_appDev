@@ -1,0 +1,253 @@
+/* Job search filter chips */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--aivana-space-2);
+  margin-bottom: var(--aivana-space-6);
+}
+
+.chip-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--aivana-space-2);
+  max-width: 100%;
+  min-height: var(--aivana-touch-preferred);
+  padding: 0 var(--aivana-space-4);
+  border: 1px solid var(--aivana-color-border-control);
+  border-radius: var(--aivana-radius-md);
+  background: var(--aivana-color-surface-card);
+  color: var(--aivana-color-text-primary);
+  font-weight: 500;
+  transition: background-color var(--aivana-motion-fast);
+}
+
+.chip:hover:not(:disabled) {
+  background: var(--aivana-color-surface-row);
+}
+
+.chip.active {
+  border-color: color-mix(in srgb, var(--aivana-color-accent-teal) 40%, transparent);
+  background: color-mix(in srgb, var(--aivana-color-accent-teal) 14%, var(--aivana-color-surface-card));
+}
+
+.chip.active:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--aivana-color-accent-teal) 22%, var(--aivana-color-surface-card));
+}
+
+.chip:disabled {
+  opacity: 0.6;
+}
+
+.chip:focus-visible {
+  outline: var(--aivana-focus-ring);
+  outline-offset: var(--aivana-focus-offset);
+}
+
+.chip-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip-caret {
+  font-size: 12px;
+}
+
+.chip-popover {
+  position: absolute;
+  top: calc(100% + var(--aivana-space-1));
+  left: 0;
+  z-index: var(--aivana-z-overlay);
+  display: flex;
+  flex-direction: column;
+  gap: var(--aivana-space-3);
+  box-sizing: border-box;
+  width: min(360px, calc(100vw - 32px));
+  padding: var(--aivana-space-4);
+  border: 1px solid var(--aivana-color-border-hairline);
+  border-radius: var(--aivana-radius-lg);
+  background: var(--aivana-color-surface-card);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.16);
+}
+
+.chip-heading {
+  margin: 0;
+  font-weight: 700;
+}
+
+.chip-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aivana-space-1);
+}
+
+.chip-option {
+  display: flex;
+  align-items: center;
+  gap: var(--aivana-space-3);
+  min-height: 36px;
+  cursor: pointer;
+}
+
+.chip-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--aivana-color-accent-teal);
+}
+
+.chip-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--aivana-space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--aivana-space-1);
+  padding: var(--aivana-space-1) var(--aivana-space-1) var(--aivana-space-1) var(--aivana-space-3);
+  border-radius: var(--aivana-radius-sm);
+  background: color-mix(in srgb, var(--aivana-color-accent-teal) 18%, var(--aivana-color-surface-card));
+}
+
+.chip-tag button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--aivana-radius-sm);
+  background: transparent;
+  color: var(--aivana-color-text-secondary);
+  font-size: 16px;
+}
+
+.chip-tag button:hover {
+  color: var(--aivana-color-text-primary);
+}
+
+.chip-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--aivana-touch-preferred);
+  padding: 0 var(--aivana-space-3);
+  border: 1px solid var(--aivana-color-border-control);
+  border-radius: var(--aivana-radius-md);
+  background: var(--aivana-color-surface-field);
+  color: var(--aivana-color-text-primary);
+}
+
+.chip-input::placeholder {
+  color: var(--aivana-color-text-placeholder);
+}
+
+.chip-input:focus-visible {
+  outline: var(--aivana-focus-ring);
+  outline-offset: 0;
+}
+
+.input-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon svg {
+  position: absolute;
+  left: 10px;
+  color: var(--aivana-color-text-secondary);
+  pointer-events: none;
+}
+
+.input-icon .chip-input {
+  padding-left: 36px;
+}
+
+.chip-confirm {
+  min-height: var(--aivana-touch-min);
+  padding: var(--aivana-space-2);
+  border: 0;
+  border-top: 1px solid var(--aivana-color-border-hairline);
+  background: transparent;
+  color: var(--aivana-color-text-primary);
+  font-weight: 700;
+}
+
+.chip-confirm:disabled {
+  color: var(--aivana-color-text-disabled);
+}
+
+/* Job details in the fit panel, shown before the analysis finishes */
+.fit-title a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--aivana-color-action-link);
+  text-decoration: none;
+}
+
+.fit-title a:hover {
+  text-decoration: underline;
+}
+
+.fit-title a:focus-visible {
+  outline: var(--aivana-focus-ring);
+  outline-offset: var(--aivana-focus-offset);
+}
+
+.job-details {
+  margin-bottom: var(--aivana-space-4);
+  border: 1px solid var(--aivana-color-border-hairline);
+  border-radius: var(--aivana-radius-md);
+}
+
+.job-details summary {
+  display: flex;
+  align-items: center;
+  gap: var(--aivana-space-2);
+  min-height: var(--aivana-touch-min);
+  padding: 0 var(--aivana-space-3);
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.job-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.job-details:not([open]) summary svg {
+  transform: rotate(-90deg);
+}
+
+.job-details summary svg {
+  transition: transform var(--aivana-motion-fast);
+}
+
+.job-details p {
+  max-height: 320px;
+  margin: 0;
+  padding: 0 var(--aivana-space-3) var(--aivana-space-3);
+  overflow-y: auto;
+  color: var(--aivana-color-text-secondary);
+  white-space: pre-line;
+}
+
+.fit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--aivana-space-2);
+  margin-bottom: var(--aivana-space-4);
+  padding-bottom: var(--aivana-space-4);
+  border-bottom: 1px solid var(--aivana-color-border-hairline);
+}
