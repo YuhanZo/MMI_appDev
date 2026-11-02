@@ -1,8 +1,4 @@
-import type {
-  DetailedInterviewFeedback,
-  InterviewAnswerType,
-  InterviewMode,
-} from '../../types'
+import type { InterviewAnswerType, InterviewFeedbackDetail, InterviewMode } from '../../types'
 
 export type InterviewStage = 'setup' | 'session' | 'complete' | 'summary'
 
@@ -13,12 +9,13 @@ export interface StoredInterviewAnswer {
 }
 
 export interface InterviewSessionState {
+  sessionId: string | null
   mode: InterviewMode
   company: string
   position: string
   currentQuestion: number
   answers: Record<string, StoredInterviewAnswer>
-  feedback: Record<string, DetailedInterviewFeedback>
+  feedback: Record<string, InterviewFeedbackDetail>
   stage: InterviewStage
   answerType: InterviewAnswerType
   language: string
@@ -27,6 +24,7 @@ export interface InterviewSessionState {
 
 export function createSetupResetState(mode: InterviewMode): InterviewSessionState {
   return {
+    sessionId: null,
     mode,
     company: '',
     position: '',
@@ -44,9 +42,11 @@ export function createCrossModeSessionState(
   company: string,
   position: string,
   mode: InterviewMode,
+  sessionId: string | null = null,
 ): InterviewSessionState {
   return {
     ...createSetupResetState(mode),
+    sessionId,
     company,
     position,
     stage: 'session',

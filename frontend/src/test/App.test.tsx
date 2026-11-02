@@ -64,6 +64,18 @@ function mockApi(overrides: Record<string, unknown> = {}) {
       gaps: ['Limited AWS experience'],
       recommendations: ['Review basic AWS services'],
     },
+    '/api/interview/sessions': {
+      session_id: 'session-test',
+      company: 'Example Company',
+      position: 'Software Engineer Intern',
+      mode: 'behavioral',
+      status: 'active',
+      current_question_index: 0,
+      questions: [
+        QUESTION,
+        { id: 'q2', question: 'Tell me about another project.', type: 'behavioral' },
+      ],
+    },
     '/api/interview/questions': [QUESTION, TECHNICAL_QUESTION],
     '/api/interview/questions?mode=behavioral': [QUESTION],
     '/api/interview/questions?mode=technical': [TECHNICAL_QUESTION],
@@ -84,6 +96,30 @@ function mockApi(overrides: Record<string, unknown> = {}) {
   }
 
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+    if (/\/api\/interview\/sessions\/[^/]+\/answers/.test(url)) {
+      const request = JSON.parse(String(init?.body)) as { question_index: number }
+      const interview = routes['/api/interview/sessions'] as {
+        session_id: string
+        questions: Array<{ id: string; question: string; type: 'behavioral' }>
+      }
+      return {
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({
+          session_id: interview.session_id,
+          question_index: request.question_index,
+          question_id: interview.questions[request.question_index].id,
+          current_question_index: request.question_index + 1,
+          next_question: interview.questions[request.question_index + 1] ?? null,
+          score: 8,
+          feedback: 'Overall feedback.',
+          strengths: ['Clear explanation'],
+          areas_to_improve: ['Add measurable results'],
+          improved_answer: 'I led a project and measured the outcome.',
+        }),
+      } as Response
+    }
     // A function route answers each call separately (e.g. a different reply per call).
     const route = routes[url]
     const body = typeof route === 'function' ? route(init) : route
@@ -551,9 +587,41 @@ describe('App', () => {
     expect(await screen.findByText(/Tell me about a challenging software project/)).toBeInTheDocument()
 
     await user.type(screen.getByLabelText('Your Answer'), 'I led a project that...')
-    await user.click(screen.getByRole('button', { name: 'Submit Answer' }))
+    await user.click(screen.getByRole('button', { name: 'Send' }))
 
     expect(await screen.findByText(/Overall feedback\./)).toBeInTheDocument()
+  })
+
+  it('keeps each question’s answer separate', async () => {
+    mockApi({
+      '/api/interview/sessions': {
+        session_id: 'session-test',
+        company: 'Aivana',
+        position: 'Engineer',
+        mode: 'behavioral',
+        status: 'active',
+        current_question_index: 0,
+        questions: [
+          QUESTION,
+          { id: 'q2', question: 'Tell me about another project.', type: 'behavioral' },
+        ],
+      },
+    })
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: 'Behavioral Interview' }))
+    const setup = screen.getByRole('region', { name: 'Behavioral Interview Setup' })
+    await user.type(within(setup).getByLabelText('Company'), 'Aivana')
+    await user.type(within(setup).getByLabelText('Position / Job Title'), 'Engineer')
+    await user.click(within(setup).getByRole('button', { name: 'Start Interview' }))
+
+    const first = await screen.findByLabelText('Your Answer')
+    await user.type(first, 'Only for the first question')
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+    const second = await screen.findByLabelText('Your Answer')
+
+    expect(second).toHaveValue('')
   })
 
   it('opens the technical setup from its navigation item', async () => {

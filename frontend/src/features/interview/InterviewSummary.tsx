@@ -12,9 +12,14 @@ export default function InterviewSummary({ mode, summary, onTryOtherMode }: Inte
   return (
     <section className="interview-panel interview-summary-panel" aria-label="Interview summary">
       <h2>Interview Summary</h2>
-      <p>{summary.overall_performance}</p>
+      <p>{summary.overall_evaluation}</p>
 
       <div className="interview-summary-grid">
+        <section className="interview-summary-section full">
+          <h3>Scores</h3>
+          <p><strong>{summary.total_score}/50</strong> Total Score</p>
+          <p><strong>{summary.average_score}/10</strong> Average Score</p>
+        </section>
         <section className="interview-summary-section">
           <h3>Strong Areas</h3>
           <ul>{summary.strong_areas.map((item) => <li key={item}>{item}</li>)}</ul>
@@ -29,7 +34,11 @@ export default function InterviewSummary({ mode, summary, onTryOtherMode }: Inte
             {summary.question_results.map((item) => (
               <li key={item.question}>
                 <strong>{item.question}</strong>
-                <span>{item.result}</span>
+                <span>Your Answer</span>
+                <span>{item.answer}</span>
+                <span>Score: {item.score}/10</span>
+                <span>Feedback</span>
+                <span>{item.feedback}</span>
               </li>
             ))}
           </ul>

@@ -4,6 +4,7 @@ interface InterviewSetupProps {
   mode: InterviewMode
   company: string
   position: string
+  starting: boolean
   onCompanyChange: (value: string) => void
   onPositionChange: (value: string) => void
   onStart: () => void
@@ -13,6 +14,7 @@ export default function InterviewSetup({
   mode,
   company,
   position,
+  starting,
   onCompanyChange,
   onPositionChange,
   onStart,
@@ -49,8 +51,8 @@ export default function InterviewSetup({
         </div>
       </div>
       <div className="interview-actions">
-        <button className="interview-primary-button" type="button" disabled={!ready} onClick={onStart}>
-          Start Interview
+        <button className="interview-primary-button" type="button" disabled={!ready || starting} onClick={onStart}>
+          {starting ? 'Generating Questions...' : 'Start Interview'}
         </button>
       </div>
     </section>
