@@ -41,6 +41,8 @@ export interface FitAnalysisResult {
   strengths: string[]
   gaps: string[]
   recommendations: string[]
+  matched_skills: string[]
+  missing_skills: string[]
 }
 
 export interface InterviewQuestion {

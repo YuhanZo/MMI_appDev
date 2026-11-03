@@ -11,7 +11,7 @@ from pydantic import ValidationError
 from app import aivana
 from app.schemas import FitAnalysisRequest, FitAnalysisResult
 
-TEMPLATE = '{"summary": "<1-2 sentences>", "strengths": ["..."], "gaps": ["..."], "recommendations": ["..."]}'
+TEMPLATE = '{"summary": "<1-2 sentences>", "strengths": ["..."], "gaps": ["..."], "recommendations": ["..."], "matched_skills": ["..."], "missing_skills": ["..."]}'
 
 # AI output is probabilistic, so a wrong shape gets one more try -- if the shared
 # budget still has a call left after any transport retries.
@@ -27,7 +27,7 @@ def build_prompt(req: FitAnalysisRequest) -> str:
         "Assess how well the candidate fits the job. Be specific to this job and this candidate.\n\n"
         f"INPUT:\n{json.dumps(data)}\n\n"
         "Return ONLY a JSON object that matches this exact template "
-        "(same keys, no extra keys, 2-4 items per list):\n"
+        "(same keys, no extra keys, 2-4 items per list; matched_skills and missing_skills are short skill names from the job, like Python or AWS):\n"
         f"{TEMPLATE}"
     )
 

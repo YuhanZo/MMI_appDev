@@ -3,7 +3,7 @@
 from app.models import SearchLog
 
 JOB_FIELDS = {"id", "title", "company", "location", "description", "url", "company_logo"}
-FIT_FIELDS = {"summary", "strengths", "gaps", "recommendations"}
+FIT_FIELDS = {"summary", "strengths", "gaps", "recommendations", "matched_skills", "missing_skills"}
 
 
 def test_search_returns_jobs_in_the_shared_format(client):

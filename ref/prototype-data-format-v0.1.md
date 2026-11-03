@@ -128,7 +128,9 @@ Used for fit analysis and mock interview.
   ],
   "recommendations": [
     "Review basic AWS services"
-  ]
+  ],
+  "matched_skills": ["Python", "Git", "REST APIs"],
+  "missing_skills": ["AWS", "Docker"]
 }
 ```
 
@@ -140,6 +142,8 @@ Used for fit analysis and mock interview.
 | `strengths` | string[] |
 | `gaps` | string[] |
 | `recommendations` | string[] |
+| `matched_skills` | string[] |
+| `missing_skills` | string[] |
 
 ---
 

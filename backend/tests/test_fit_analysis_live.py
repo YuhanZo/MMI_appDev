@@ -8,12 +8,14 @@ import pytest
 from app import aivana
 from app.config import settings
 
-FIT_FIELDS = {"summary", "strengths", "gaps", "recommendations"}
+FIT_FIELDS = {"summary", "strengths", "gaps", "recommendations", "matched_skills", "missing_skills"}
 GOOD = {
     "summary": "Good fit for the backend work.",
     "strengths": ["Python"],
     "gaps": ["No AWS"],
     "recommendations": ["Do an AWS project"],
+    "matched_skills": ["Python"],
+    "missing_skills": ["AWS"],
 }
 # What Aivana returned when the template was only in `system`.
 WRONG_SHAPE = {"fit_summary": "...", "match_level": "Good fit", "recommendation": "Apply"}

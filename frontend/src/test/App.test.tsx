@@ -53,6 +53,8 @@ function mockApi(overrides: Record<string, unknown> = {}) {
       strengths: ['Strong Python experience'],
       gaps: ['Limited AWS experience'],
       recommendations: ['Review basic AWS services'],
+      matched_skills: ['Python', 'Git'],
+      missing_skills: ['AWS'],
     },
     '/api/interview/questions': [QUESTION, TECHNICAL_QUESTION],
     '/api/interview/questions?mode=behavioral': [QUESTION],

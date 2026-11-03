@@ -1,3 +1,4 @@
+import SkillBar from './SkillBar'
 import { useRef, useState, type FormEvent } from 'react'
 import * as api from '../../api'
 import { Icon } from '../../icons'
@@ -371,6 +372,7 @@ function FitPanel({ js, onPracticeInterview }: { js: JobSearchState; onPracticeI
             Fit analysis
           </p>
           <p className="fit-summary">{fit.summary}</p>
+          <SkillBar matched={fit.matched_skills} missing={fit.missing_skills} />
           <div className="fit-sections">
             <FitList title="Strengths" tone="good" items={fit.strengths} />
             <FitList title="Gaps" tone="warn" items={fit.gaps} />

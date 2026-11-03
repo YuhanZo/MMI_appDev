@@ -54,6 +54,8 @@ class FitAnalysisResult(BaseModel):
     strengths: list[str]
     gaps: list[str]
     recommendations: list[str]
+    matched_skills: list[str] = []
+    missing_skills: list[str] = []
 
 
 class InterviewQuestion(BaseModel):

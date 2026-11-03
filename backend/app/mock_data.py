@@ -34,6 +34,8 @@ FIT_ANALYSIS = FitAnalysisResult(
     strengths=["Strong Python experience"],
     gaps=["Limited AWS experience"],
     recommendations=["Review basic AWS services"],
+    matched_skills=["Python", "Git", "REST APIs"],
+    missing_skills=["AWS", "Docker"],
 )
 
 QUESTIONS = [
