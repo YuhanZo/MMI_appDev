@@ -1,0 +1,74 @@
+[
+  {
+    "id": "partial_backend_python",
+    "job": {"id": "eval_fit_1", "title": "Backend Engineering Intern", "company": "Northwind", "location": "Columbus, OH",
+            "description": "Build APIs in Python with FastAPI. Requirements: Python, FastAPI, SQL, Docker, AWS.", "url": "https://example.com/1"},
+    "profile": {"skills": ["Python", "FastAPI", "SQL", "Git"], "education": "BS Computer Science",
+                "experience": "Built a course project API with FastAPI and SQLite."},
+    "expected_matched": ["Python", "FastAPI", "SQL"],
+    "expected_missing": ["Docker", "AWS"]
+  },
+  {
+    "id": "partial_frontend_react",
+    "job": {"id": "eval_fit_2", "title": "Frontend Developer Intern", "company": "Contoso", "location": "Remote",
+            "description": "Work on our React web app. Requirements: React, TypeScript, CSS, Jest.", "url": "https://example.com/2"},
+    "profile": {"skills": ["JavaScript", "React", "HTML", "CSS"], "education": "BS Computer Science",
+                "experience": "Built a personal portfolio site and a React to-do app."},
+    "expected_matched": ["React", "CSS"],
+    "expected_missing": ["TypeScript", "Jest"]
+  },
+  {
+    "id": "partial_data_analyst",
+    "job": {"id": "eval_fit_3", "title": "Data Analyst Intern", "company": "Fabrikam", "location": "Chicago, IL",
+            "description": "Analyze sales data and build dashboards. Requirements: SQL, Python, Tableau, Excel, Statistics.", "url": "https://example.com/3"},
+    "profile": {"skills": ["SQL", "Excel", "Power BI", "Python"], "education": "BS Data Analytics",
+                "experience": "Built Power BI dashboards for a campus organization."},
+    "expected_matched": ["SQL", "Python", "Excel"],
+    "expected_missing": ["Tableau", "Statistics"]
+  },
+  {
+    "id": "no_overlap_ios",
+    "job": {"id": "eval_fit_4", "title": "iOS Developer Intern", "company": "Tailspin", "location": "Austin, TX",
+            "description": "Build features for our iPhone app. Requirements: Swift, SwiftUI, Xcode.", "url": "https://example.com/4"},
+    "profile": {"skills": ["Python", "Pandas", "SQL"], "education": "BS Statistics",
+                "experience": "Cleaned and analyzed survey data in Python."},
+    "expected_matched": [],
+    "expected_missing": ["Swift", "SwiftUI", "Xcode"]
+  },
+  {
+    "id": "full_match_java",
+    "job": {"id": "eval_fit_5", "title": "Software Engineer Intern", "company": "Litware", "location": "Dallas, TX",
+            "description": "Build backend services. Requirements: Java, Spring Boot, PostgreSQL, Git.", "url": "https://example.com/5"},
+    "profile": {"skills": ["Java", "Spring Boot", "PostgreSQL", "Git", "Docker"], "education": "BS Computer Science",
+                "experience": "Interned on a Spring Boot team and shipped two services backed by PostgreSQL."},
+    "expected_matched": ["Java", "Spring Boot", "PostgreSQL", "Git"],
+    "expected_missing": []
+  },
+  {
+    "id": "synonyms_node",
+    "job": {"id": "eval_fit_6", "title": "Full Stack Intern", "company": "Adatum", "location": "Remote",
+            "description": "Requirements: JavaScript, Node.js, PostgreSQL, REST APIs, Kubernetes.", "url": "https://example.com/6"},
+    "profile": {"skills": ["JS", "NodeJS", "Postgres", "Express"], "education": "BS Computer Science",
+                "experience": "Built REST APIs with Express and Postgres for a hackathon project."},
+    "expected_matched": ["JavaScript", "Node.js", "PostgreSQL", "REST APIs"],
+    "expected_missing": ["Kubernetes"]
+  },
+  {
+    "id": "skills_only_in_experience",
+    "job": {"id": "eval_fit_7", "title": "DevOps Intern", "company": "Woodgrove", "location": "Columbus, OH",
+            "description": "Help run our build and deploy pipelines. Requirements: Docker, Kubernetes, CI/CD, Linux.", "url": "https://example.com/7"},
+    "profile": {"skills": ["Linux", "Bash"], "education": "BS Computer Engineering",
+                "experience": "Set up GitHub Actions CI/CD pipelines and containerized services with Docker during an internship."},
+    "expected_matched": ["Linux", "CI/CD", "Docker"],
+    "expected_missing": ["Kubernetes"]
+  },
+  {
+    "id": "vague_posting_no_skills",
+    "job": {"id": "eval_fit_8", "title": "Associate", "company": "Proseware", "location": "Columbus, OH",
+            "description": "Join our friendly team and help our customers succeed. Great culture and growth opportunities.", "url": "https://example.com/8"},
+    "profile": {"skills": ["Python", "SQL"], "education": "BS Computer Science",
+                "experience": "Worked on class projects."},
+    "expected_matched": [],
+    "expected_missing": []
+  }
+]

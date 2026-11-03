@@ -1,0 +1,43 @@
+[
+  {
+    "id": "beh_no_result",
+    "mode": "behavioral",
+    "question_index": 0,
+    "answer": "In my software engineering course, two teammates disagreed about which framework to use. I set up a meeting where each of them walked through the tradeoffs, and we picked one together.",
+    "expect_flags": ["result", "outcome", "impact", "measur", "metric", "quantif"]
+  },
+  {
+    "id": "beh_strong",
+    "mode": "behavioral",
+    "question_index": 0,
+    "answer": "In my software engineering course, two teammates disagreed about which framework to use, and our sprint was slipping. As team lead, my task was to get us unblocked. I asked each of them to write a one-page comparison, then ran a 30-minute meeting where we scored both options against our deadline. We chose React, finished the sprint two days early, and got the highest grade in the class."
+  },
+  {
+    "id": "beh_vague",
+    "mode": "behavioral",
+    "question_index": 1,
+    "answer": "I always work hard and I get along with everyone, so I handle these situations well.",
+    "expect_flags": ["specific", "example", "situation", "detail"]
+  },
+  {
+    "id": "beh_we_not_i",
+    "mode": "behavioral",
+    "question_index": 1,
+    "answer": "We had a tight deadline on our capstone. We split up the work, we met every day, and we finished on time with all features working.",
+    "expect_flags": ["your role", "your own", "individual", "personal", "ownership", "you specifically", "contribution"]
+  },
+  {
+    "id": "tech_brute_force",
+    "mode": "technical",
+    "question_index": 0,
+    "answer": "I would just check every possible combination with nested loops and return the first one that works.",
+    "expect_flags": ["complexity", "o(n", "efficien", "optimi", "faster"]
+  },
+  {
+    "id": "tech_no_complexity",
+    "mode": "technical",
+    "question_index": 0,
+    "answer": "I would use a hash map to keep track of what I have seen so far and return as soon as I find a match.",
+    "expect_flags": ["complexity", "o(", "edge case", "empty"]
+  }
+]
