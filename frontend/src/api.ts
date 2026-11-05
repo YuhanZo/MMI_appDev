@@ -74,7 +74,8 @@ export async function uploadResume(file: File): Promise<ResumeUploadResult> {
   if (!res.ok) throw await apiError(res)
   return res.json() as Promise<ResumeUploadResult>
 }
-export const runBenchmark = (req: FitAnalysisRequest) => post<BenchmarkResult>('/api/benchmark/run', req)
+
+export const askBenchmark = (prompt: string) => post<BenchmarkResult>('/api/benchmark/chat', { prompt })
 
 export const getQuestions = (mode?: InterviewMode) =>
   request<InterviewQuestion[]>(

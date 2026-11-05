@@ -55,12 +55,13 @@ export interface FitAnalysisResult {
   recommendations: string[]
 }
 
-export interface ModelRun {
+export const MAX_BENCHMARK_PROMPT = 4000 // characters
+
+export interface ModelReply {
   system: 'aivana' | 'baseline'
   model: string
-  mock: boolean // canned answer: the numbers are placeholders
-  answer: FitAnalysisResult | null // null if the call failed or the format didn't match
-  format_ok: boolean // matched the fit analysis format on the first try
+  mock: boolean // canned reply: the numbers are placeholders
+  text: string | null // null if the call failed
   latency_ms: number
   cost: number | null // in cost_unit; null if unknown
   cost_unit: 'credits' | 'usd'
@@ -71,7 +72,7 @@ export interface ModelRun {
 }
 
 export interface BenchmarkResult {
-  runs: ModelRun[] // Aivana first, then the baseline
+  replies: ModelReply[] // Aivana first, then the baseline
 }
 
 export interface InterviewQuestion {

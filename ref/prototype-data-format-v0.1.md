@@ -406,23 +406,23 @@ from the saved SQLite turns. A successful response is cached in the session.
 
 ## 12. BenchmarkResult
 
-Returned by `POST /api/benchmark/run` (request: a `FitAnalysisRequest`). One
-`ModelRun` per model: Aivana first, then the baseline.
+Returned by `POST /api/benchmark/chat` (request: `{"prompt": "Correct grammar: I are happy."}`,
+1-4000 characters). One `ModelReply` per model: Aivana first, then the baseline. The
+page shows them in random order as Model A and Model B.
 
 ```json
 {
-  "runs": [
+  "replies": [
     {
       "system": "aivana",
       "model": "aivana-mmi",
       "mock": false,
-      "answer": { "summary": "...", "strengths": [], "gaps": [], "recommendations": [] },
-      "format_ok": true,
-      "latency_ms": 13374,
-      "cost": 0.000243,
+      "text": "The correct grammar would be \"I am happy.\"",
+      "latency_ms": 12200,
+      "cost": 0.00121,
       "cost_unit": "credits",
-      "input_tokens": 23,
-      "output_tokens": 55,
+      "input_tokens": 12,
+      "output_tokens": 9,
       "error": null,
       "request_id": "req_d749408b0aedcd00e9bc3cef"
     }
@@ -430,15 +430,14 @@ Returned by `POST /api/benchmark/run` (request: a `FitAnalysisRequest`). One
 }
 ```
 
-**ModelRun fields**
+**ModelReply fields**
 
 | Field | Type |
 | --- | --- |
 | `system` | `aivana` \| `baseline` |
 | `model` | string (as reported; Aivana says `aivana-mmi`) |
-| `mock` | boolean (canned answer; the numbers are placeholders) |
-| `answer` | `FitAnalysisResult` \| null (null if the call failed or the format didn't match) |
-| `format_ok` | boolean (matched `FitAnalysisResult` on the first try) |
+| `mock` | boolean (canned reply; the numbers are placeholders) |
+| `text` | string \| null (null if the call failed) |
 | `latency_ms` | integer |
 | `cost` | number \| null (in `cost_unit`; null if unknown) |
 | `cost_unit` | `credits` \| `usd` |

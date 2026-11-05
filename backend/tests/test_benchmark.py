@@ -11,134 +11,131 @@ from app import aivana, baseline
 from app.config import Settings, settings
 from app.routers.benchmark import _running
 
-FIT = {
-    "summary": "Good fit.",
-    "strengths": ["Python"],
-    "gaps": ["AWS"],
-    "recommendations": ["Learn AWS basics"],
-}
+PROMPT = "Correct grammar: I are happy."
 
 
 @pytest.fixture
 def live(monkeypatch):
-    """Both sides live; returns a function that sets their replies and records prompts."""
+    """Both sides live; returns a function that sets their replies and records what was sent."""
     monkeypatch.setattr(settings, "aivana_mode", "live")
     monkeypatch.setattr(settings, "baseline_mode", "live")
-    prompts: dict = {"aivana_calls": 0}
+    sent: dict = {}
 
     def serve(aivana_reply: httpx.Response, baseline_reply: httpx.Response):
         def aivana_handler(request):
-            prompts["aivana"] = json.loads(request.content)["prompt"]
-            prompts["aivana_calls"] += 1
+            sent["aivana"] = json.loads(request.content)
             return aivana_reply
 
         def baseline_handler(request):
-            body = json.loads(request.content)
-            prompts["baseline"] = body["messages"][0]["content"]
-            prompts["baseline_model"] = body["model"]
-            prompts["auth"] = request.headers["authorization"]
+            sent["baseline"] = json.loads(request.content)
+            sent["auth"] = request.headers["authorization"]
             return baseline_reply
 
         monkeypatch.setattr(aivana, "_transport", httpx.MockTransport(aivana_handler))
         monkeypatch.setattr(baseline, "_transport", httpx.MockTransport(baseline_handler))
-        return prompts
+        return sent
 
     return serve
 
 
-def aivana_ok(structured=FIT):
+def aivana_ok(answer='The correct grammar is "I am happy."'):
     return httpx.Response(
         200,
         json={
-            "structured": structured,
+            "answer": answer,
             "models_used": ["aivana-mmi"],
-            "usage": {"input_tokens": 120, "output_tokens": 80, "credits": 0.0004},
+            "usage": {"input_tokens": 12, "output_tokens": 9, "credits": 0.0001},
             "request_id": "req_1",
         },
     )
 
 
-def baseline_ok(text=f"```json\n{json.dumps(FIT)}\n```"):
+def baseline_ok(text="I'm happy to help with your grammar."):
     return httpx.Response(
         200,
-        json={"choices": [{"message": {"content": text}}], "usage": {"prompt_tokens": 100, "completion_tokens": 60}},
+        json={"choices": [{"message": {"content": text}}], "usage": {"prompt_tokens": 10, "completion_tokens": 8}},
     )
 
 
-def run(client, sample_job, sample_profile):
-    return client.post("/api/benchmark/run", json={"job": sample_job, "user_profile": sample_profile})
+def ask(client, prompt=PROMPT):
+    return client.post("/api/benchmark/chat", json={"prompt": prompt})
 
 
-def test_mock_mode_returns_placeholder_runs_for_both(client, sample_job, sample_profile):
-    res = run(client, sample_job, sample_profile)
+def test_mock_mode_returns_placeholder_replies_for_both(client):
+    res = ask(client)
     assert res.status_code == 200
-    runs = res.json()["runs"]
-    assert [r["system"] for r in runs] == ["aivana", "baseline"]
-    assert all(r["mock"] and r["format_ok"] for r in runs)
+    replies = res.json()["replies"]
+    assert [r["system"] for r in replies] == ["aivana", "baseline"]
+    assert all(r["mock"] and PROMPT in r["text"] for r in replies)
+    assert replies[0]["text"] == replies[1]["text"]  # nothing in the text gives the model away
 
 
-def test_both_get_the_same_prompt_and_report_speed_cost_and_format(
-    client, sample_job, sample_profile, live, monkeypatch
-):
+def test_both_get_the_prompt_unchanged_and_report_speed_and_cost(client, live, monkeypatch):
     monkeypatch.setattr(settings, "baseline_price_in_per_m", 0.5)
     monkeypatch.setattr(settings, "baseline_price_out_per_m", 2.0)
-    prompts = live(aivana_ok(), baseline_ok())
+    sent = live(aivana_ok(), baseline_ok())
 
-    a, b = run(client, sample_job, sample_profile).json()["runs"]
+    a, b = ask(client).json()["replies"]
 
-    assert prompts["aivana"] == prompts["baseline"]
-    assert (prompts["baseline_model"], prompts["auth"]) == ("test-model", "Bearer test-key")
+    assert sent["aivana"]["prompt"] == PROMPT
+    assert "output_shape" not in sent["aivana"]  # free text, no JSON template
+    assert sent["baseline"]["messages"] == [{"role": "user", "content": PROMPT}]
+    assert (sent["baseline"]["model"], sent["auth"]) == ("test-model", "Bearer test-key")
     assert a | {"latency_ms": 0} == {
         "system": "aivana",
         "model": "aivana-mmi",
         "mock": False,
-        "answer": FIT,
-        "format_ok": True,
+        "text": 'The correct grammar is "I am happy."',
         "latency_ms": 0,
-        "cost": 0.0004,
+        "cost": 0.0001,
         "cost_unit": "credits",
-        "input_tokens": 120,
-        "output_tokens": 80,
+        "input_tokens": 12,
+        "output_tokens": 9,
         "error": None,
         "request_id": "req_1",
     }
-    assert b["answer"] == FIT and b["format_ok"] is True  # JSON found inside the ``` fence
-    assert b["cost"] == pytest.approx((100 * 0.5 + 60 * 2.0) / 1_000_000)
-    assert b["cost_unit"] == "usd" and (b["input_tokens"], b["output_tokens"]) == (100, 60)
+    assert b["text"] == "I'm happy to help with your grammar."
+    assert b["cost"] == pytest.approx((10 * 0.5 + 8 * 2.0) / 1_000_000)
+    assert (b["cost_unit"], b["input_tokens"], b["output_tokens"]) == ("usd", 10, 8)
     assert a["latency_ms"] >= 0 and b["latency_ms"] >= 0
 
 
-def test_a_wrong_format_is_reported_without_a_retry(client, sample_job, sample_profile, live):
-    prompts = live(aivana_ok(structured={"fit": "good"}), baseline_ok(text="Sure! The candidate fits well."))
-    a, b = run(client, sample_job, sample_profile).json()["runs"]
-
-    assert prompts["aivana_calls"] == 1  # the app's fit analysis would have retried
-
-    assert (a["format_ok"], a["answer"]) == (False, None)
-    assert (b["format_ok"], b["answer"]) == (False, None)
-    assert b["cost"] is None  # no prices configured
+def test_no_prices_means_no_baseline_cost(client, live):
+    live(aivana_ok(), baseline_ok())
+    _, b = ask(client).json()["replies"]
+    assert b["cost"] is None
 
 
-def test_one_side_failing_does_not_hide_the_other(client, sample_job, sample_profile, live):
+def test_one_side_failing_does_not_hide_the_other(client, live):
     live(aivana_ok(), httpx.Response(429, text="quota exceeded"))
-    a, b = run(client, sample_job, sample_profile).json()["runs"]
+    a, b = ask(client).json()["replies"]
 
-    assert a["format_ok"] is True
-    assert b["error"] == "Baseline model returned 429: quota exceeded"
-    assert b["format_ok"] is False
+    assert a["text"] == 'The correct grammar is "I am happy."'
+    assert (b["text"], b["error"]) == (None, "Baseline model returned 429: quota exceeded")
 
 
-def test_a_provider_error_shows_its_own_message(client, sample_job, sample_profile, live):
+def test_a_provider_error_shows_its_own_message(client, live):
     gemini_404 = [{"error": {"code": 404, "message": "This model is no longer available to new users."}}]
     live(aivana_ok(), httpx.Response(404, json=gemini_404))
-    _, b = run(client, sample_job, sample_profile).json()["runs"]
+    _, b = ask(client).json()["replies"]
     assert b["error"] == "Baseline model returned 404: This model is no longer available to new users."
 
 
-def test_only_one_benchmark_runs_at_a_time(client, sample_job, sample_profile):
-    asyncio.run(_running.acquire())  # as if another benchmark were running
+def test_an_aivana_reply_without_text_is_an_error(client, live):
+    live(aivana_ok(answer=None), baseline_ok())
+    a, _ = ask(client).json()["replies"]
+    assert (a["text"], a["error"]) == (None, "Aivana's reply had no answer text")
+
+
+@pytest.mark.parametrize("prompt", ["", "   ", "x" * 4001])
+def test_a_blank_or_too_long_prompt_is_rejected(client, prompt):
+    assert ask(client, prompt).status_code == 422
+
+
+def test_only_one_comparison_runs_at_a_time(client):
+    asyncio.run(_running.acquire())  # as if another comparison were running
     try:
-        res = run(client, sample_job, sample_profile)
+        res = ask(client)
     finally:
         _running.release()
     assert res.status_code == 429

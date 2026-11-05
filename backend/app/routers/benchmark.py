@@ -2,23 +2,25 @@ import asyncio
 
 from fastapi import APIRouter, HTTPException
 
-from app.benchmark import run_aivana, run_baseline
-from app.schemas import BenchmarkResult, FitAnalysisRequest
+from app.benchmark import ask_aivana, ask_baseline
+from app.schemas import BenchmarkRequest, BenchmarkResult
 
 router = APIRouter(prefix="/api/benchmark", tags=["benchmark"])
 
-# Aivana caps requests per minute and at once, so only one benchmark runs at a time.
+# Aivana caps requests per minute and at once, so only one comparison runs at a time.
 _running = asyncio.Lock()
 
 
-@router.post("/run", response_model=BenchmarkResult)
-async def run(req: FitAnalysisRequest) -> BenchmarkResult:
-    """The same fit analysis prompt through Aivana and the baseline model, in parallel."""
+@router.post("/chat", response_model=BenchmarkResult)
+async def chat(req: BenchmarkRequest) -> BenchmarkResult:
+    """The user's prompt, unchanged, to Aivana and the baseline model in parallel."""
     if _running.locked():
         raise HTTPException(
             status_code=429,
-            detail={"message": "A benchmark is already running. Wait for it to finish.", "code": "benchmark_busy"},
+            detail={"message": "A comparison is already running. Wait for it to finish.", "code": "benchmark_busy"},
         )
     async with _running:
-        runs = await asyncio.gather(asyncio.to_thread(run_aivana, req), asyncio.to_thread(run_baseline, req))
-    return BenchmarkResult(runs=list(runs))
+        replies = await asyncio.gather(
+            asyncio.to_thread(ask_aivana, req.prompt), asyncio.to_thread(ask_baseline, req.prompt)
+        )
+    return BenchmarkResult(replies=list(replies))

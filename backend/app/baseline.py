@@ -5,8 +5,6 @@ offer, so switching providers is only a change in backend/.env. One attempt, no
 retries: the benchmark measures what a single call gives.
 """
 
-import json
-import re
 from typing import Any
 
 import httpx
@@ -67,17 +65,6 @@ def _error_message(res: httpx.Response) -> str:
     error = body.get("error") if isinstance(body, dict) else None
     message = error.get("message") if isinstance(error, dict) else None
     return message if isinstance(message, str) else res.text[:200]
-
-
-def json_from_text(text: str) -> Any:
-    """The JSON object in a chat reply, which models often wrap in ```json fences."""
-    match = re.search(r"\{.*\}", text, re.DOTALL)
-    if not match:
-        return None
-    try:
-        return json.loads(match.group(0))
-    except ValueError:
-        return None
 
 
 def cost_usd(input_tokens: int | None, output_tokens: int | None) -> float | None:

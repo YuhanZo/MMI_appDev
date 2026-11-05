@@ -137,7 +137,7 @@ SQLite.
 │   │   ├── interview_ai.py    prompt + validation for five generated questions
 │   │   ├── resume.py          text from an uploaded resume (PDF, .docx, .txt)
 │   │   ├── baseline.py        general model for the Benchmark (OpenAI-compatible chat API)
-│   │   ├── benchmark.py       same fit prompt to Aivana and the baseline: speed, cost, format
+│   │   ├── benchmark.py       the same prompt to Aivana and the baseline: reply, speed, cost
 │   │   ├── job_api.py         JSearch client: query params, post-filters, 24 h disk cache
 │   │   ├── config.py          env-driven settings (reads .env)
 │   │   ├── db.py              engine + get_db session dependency
@@ -148,7 +148,7 @@ SQLite.
 │   │       ├── jobs.py        /api/jobs/search, /api/jobs/fit-analysis
 │   │       ├── interview.py   interview session, questions, and feedback APIs
 │   │       ├── profile.py     /api/profile/resume
-│   │       └── benchmark.py   /api/benchmark/run
+│   │       └── benchmark.py   /api/benchmark/chat
 │   └── tests/
 │       ├── conftest.py        throwaway SQLite per test, test client, no real Aivana calls
 │       ├── test_aivana_client.py
@@ -173,8 +173,8 @@ SQLite.
         ├── features/interview setup, five-question session, feedback,
         │                      completion and summary components
         ├── features/profile   editable profile page and resume upload, saved in the browser
-        ├── features/benchmark Aivana vs a general model: side-by-side cards, ratings,
-        │                      results table saved in the browser
+        ├── features/benchmark Aivana vs a general model: anonymous A/B answers, votes
+        │                      (tally saved in the browser)
         ├── App.css            layout and component styles (Google Drive-inspired)
         ├── index.css          color tokens (light + dark), base styles
         ├── icons.tsx          inline SVG icons
@@ -211,7 +211,7 @@ drift apart.
 | POST | `/api/interview/feedback` | `InterviewFeedback` (mocked) |
 | POST | `/api/interview/detailed-feedback` | prepared mode-specific detailed feedback |
 | GET | `/api/interview/summary?mode=behavioral\|technical` | legacy prepared summary endpoint; the interview workflow uses the session endpoint above |
-| POST | `/api/benchmark/run` | `BenchmarkResult`: the fit analysis prompt for a `FitAnalysisRequest`, sent once to Aivana and once to the baseline model in parallel; each side reports its answer, speed, cost, tokens, format check and any error; `429 {detail: {message, code: benchmark_busy}}` while another benchmark runs |
+| POST | `/api/benchmark/chat` | `{prompt}` (1-4000 characters) → `BenchmarkResult`: the prompt, unchanged, sent once to Aivana and once to the baseline model in parallel; each reply has its text, speed, cost, tokens and any error; `429 {detail: {message, code: benchmark_busy}}` while another comparison runs |
 
 ## Tests
 
@@ -302,9 +302,13 @@ and installs a transport that fails on any real request.
 
 ## Benchmark (Aivana vs a general model)
 
-The Benchmark tab (sidebar, below Technical Interview) sends the fit analysis prompt
-to Aivana and to one general model and shows the two answers side by side, each named
-with its model, so they can be compared and rated. Set in `backend/.env`:
+The Benchmark tab (sidebar, below Technical Interview) works like a chatbot arena: you
+type any message, Aivana and one general model answer it side by side as Model A and
+Model B, in random order and without names, and you vote: A is better, B is better,
+Tie, or Both are bad. After the vote each side shows which model it was, how long it
+took and what it cost. The vote tally is kept in the browser. If a model fails, the
+round can't be voted on and both names show straight away, since errors name their model.
+Votes on mock replies aren't counted. Set in `backend/.env`:
 
 | Variable | Value |
 | --- | --- |
@@ -314,12 +318,11 @@ with its model, so they can be compared and rated. Set in `backend/.env`:
 | `BASELINE_MODEL` | default `gemini-3.5-flash` (`gemini-2.5-flash` is closed to new Gemini accounts) |
 | `BASELINE_PRICE_IN_PER_M`, `BASELINE_PRICE_OUT_PER_M` | USD per million input / output tokens, from the provider's price list; without them no cost is shown |
 
-Each side gets one attempt, with no format retry, so the numbers describe a single
-call. Speed is measured by the backend around the call. Aivana's cost is the
-`usage.credits` it reports (the USD value of a credit isn't confirmed yet); the
-baseline's is its token counts times the prices above. Format is whether the reply
-matches `FitAnalysisResult` on the first try. Quality is the user's 1-5 rating in the
-tab. Only one benchmark runs at a time, to stay within Aivana's rate limits.
+The message is sent unchanged, with no system prompt or format, and each side gets one
+call, so speed and cost describe exactly that reply. Speed is measured by the backend
+around the call. Aivana's cost is the `usage.credits` it reports (the USD value of a
+credit isn't confirmed yet); the baseline's is its token counts times the prices
+above. Only one comparison runs at a time, to stay within Aivana's rate limits.
 
 ## Job listings (JSearch)
 

@@ -82,14 +82,27 @@ class FitAnalysisResult(BaseModel):
     recommendations: list[str]
 
 
-class ModelRun(BaseModel):
-    """One model's answer to a benchmark prompt, with what it took to get it."""
+MAX_BENCHMARK_PROMPT = 4000  # characters; Aivana's own limit is 20,000
+
+
+class BenchmarkRequest(BaseModel):
+    prompt: str = Field(max_length=MAX_BENCHMARK_PROMPT)
+
+    @field_validator("prompt")
+    @classmethod
+    def not_blank(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("prompt can't be empty")
+        return value
+
+
+class ModelReply(BaseModel):
+    """One model's reply to a benchmark prompt, with what it took to get it."""
 
     system: Literal["aivana", "baseline"]
     model: str
-    mock: bool  # canned answer: the numbers are placeholders
-    answer: FitAnalysisResult | None  # None if the call failed or the format didn't match
-    format_ok: bool  # matched the fit analysis format on the first try
+    mock: bool  # canned reply: the numbers are placeholders
+    text: str | None  # None if the call failed
     latency_ms: int
     cost: float | None  # in cost_unit; None if unknown
     cost_unit: Literal["credits", "usd"]
@@ -100,7 +113,7 @@ class ModelRun(BaseModel):
 
 
 class BenchmarkResult(BaseModel):
-    runs: list[ModelRun]  # Aivana first, then the baseline
+    replies: list[ModelReply]  # Aivana first, then the baseline
 
 
 class InterviewQuestion(BaseModel):
