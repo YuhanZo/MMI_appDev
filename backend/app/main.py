@@ -9,7 +9,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app import models  # noqa: F401  -- registers tables on Base
 from app.config import settings
 from app.db import Base, engine
-from app.routers import benchmark, interview, jobs, profile
+from app.routers import benchmark, interview, jobs, profile, scenarios
 
 
 @asynccontextmanager
@@ -35,6 +35,7 @@ app.include_router(jobs.router)
 app.include_router(interview.router)
 app.include_router(profile.router)
 app.include_router(benchmark.router)
+app.include_router(scenarios.router)
 
 
 @app.get("/api/health")

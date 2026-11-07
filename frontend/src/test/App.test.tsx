@@ -194,9 +194,21 @@ describe('App', () => {
 
     const nav = screen.getByRole('navigation', { name: 'Sections' })
     const items = within(nav).getAllByRole('button').map((b) => b.textContent)
-    expect(items.slice(-2)).toEqual(['Technical Interview', 'Benchmark'])
+    expect(items.slice(-3)).toEqual(['Technical Interview', 'Benchmark', 'Scenario Test'])
     await user.click(within(nav).getByRole('button', { name: 'Benchmark' }))
     expect(screen.getByRole('heading', { name: 'Benchmark' })).toBeVisible()
+  })
+
+  it('opens the Scenario Test from the sidebar and only then loads its questions', async () => {
+    const fetchMock = mockApi({ '/api/scenarios': [] })
+    const user = userEvent.setup()
+    render(<App />)
+    const loads = () => fetchMock.mock.calls.filter(([url]) => url === '/api/scenarios').length
+    expect(loads()).toBe(0)
+
+    await user.click(screen.getByRole('button', { name: 'Scenario Test' }))
+    expect(screen.getByRole('heading', { name: 'Scenario Test' })).toBeVisible()
+    await waitFor(() => expect(loads()).toBe(1))
   })
 
   it('renders search results and analyzes the top result', async () => {

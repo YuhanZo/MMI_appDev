@@ -24,13 +24,13 @@ def _timed(call: Callable[[], ModelReply]) -> ModelReply:
     return reply
 
 
-def ask_aivana(prompt: str) -> ModelReply:
+def ask_aivana(prompt: str, effort: str = "low") -> ModelReply:
     if settings.aivana_mode == "mock":
         return _mock("aivana", "aivana-mmi", "credits", prompt)
 
     def call() -> ModelReply:
         try:
-            res = aivana.generate(prompt)
+            res = aivana.generate(prompt, effort=effort)
         except aivana.AivanaError as e:
             return _failed("aivana", "aivana-mmi", "credits", str(e), e.request_id)
         usage = res.get("usage") or {}

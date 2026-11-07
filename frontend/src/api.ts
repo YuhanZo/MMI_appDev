@@ -16,6 +16,10 @@ import type {
   Job,
   JobSearchRequest,
   ResumeUploadResult,
+  ModelReply,
+  Scenario,
+  ScenarioAnswer,
+  ScenarioJudgement,
 } from './types'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -76,6 +80,11 @@ export async function uploadResume(file: File): Promise<ResumeUploadResult> {
 }
 
 export const askBenchmark = (prompt: string) => post<BenchmarkResult>('/api/benchmark/chat', { prompt })
+
+export const getScenarios = () => request<Scenario[]>('/api/scenarios')
+export const answerScenario = (id: string) => post<ModelReply>(`/api/scenarios/${encodeURIComponent(id)}/answer`, {})
+export const judgeScenarios = (answers: ScenarioAnswer[]) =>
+  post<ScenarioJudgement>('/api/scenarios/judge', { answers })
 
 export const getQuestions = (mode?: InterviewMode) =>
   request<InterviewQuestion[]>(

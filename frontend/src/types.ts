@@ -75,6 +75,44 @@ export interface BenchmarkResult {
   replies: ModelReply[] // Aivana first, then the baseline
 }
 
+/** One question of the Scenario Test, with the points the judge checks. */
+export interface Scenario {
+  id: string
+  number: number // 1-8, the order shown
+  type: string // e.g. "Calculation"
+  title: string
+  question: string // sent to Aivana unchanged
+  key_points: string[]
+}
+
+export interface ScenarioAnswer {
+  scenario_id: string
+  text: string // Aivana's answer
+  latency_ms: number
+}
+
+export interface ScenarioVerdict {
+  scenario_id: string
+  correctness: number // 1-5, from the judge
+  helpfulness: number // 1-5, from the judge
+  honesty: number // 1-5, from the judge
+  speed: number // 1-5, from the measured latency
+  score: number // 0-100, the weighted total
+  key_points_met: boolean[] // one per key point, in order
+  verdict: 'pass' | 'partial' | 'fail'
+  comment: string
+}
+
+export interface ScenarioJudgement {
+  model: string // the judge model
+  mock: boolean // canned verdicts
+  latency_ms: number
+  summary: string
+  overall_score: number // 0-100, the mean of the scenario scores
+  passed: number
+  results: ScenarioVerdict[] // in the order of the request
+}
+
 export interface InterviewQuestion {
   id: string
   question: string

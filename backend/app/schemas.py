@@ -116,6 +116,52 @@ class BenchmarkResult(BaseModel):
     replies: list[ModelReply]  # Aivana first, then the baseline
 
 
+class Scenario(BaseModel):
+    """One question of the Scenario Test, with the points the judge checks."""
+
+    id: str
+    number: int  # 1-8, the order shown
+    type: str  # e.g. "Calculation"
+    title: str
+    question: str  # sent to Aivana unchanged
+    key_points: list[str]
+
+
+class ScenarioAnswer(BaseModel):
+    scenario_id: str
+    text: str = Field(min_length=1)  # Aivana's answer
+    latency_ms: int = Field(ge=0)
+
+
+class ScenarioJudgeRequest(BaseModel):
+    answers: list[ScenarioAnswer] = Field(min_length=1)
+
+
+Score = Annotated[int, Field(ge=1, le=5)]
+
+
+class ScenarioVerdict(BaseModel):
+    scenario_id: str
+    correctness: Score  # from the judge
+    helpfulness: Score  # from the judge
+    honesty: Score  # from the judge
+    speed: Score  # from the measured latency, not the judge
+    score: int  # 0-100, the weighted total
+    key_points_met: list[bool]  # one per key point, in order
+    verdict: Literal["pass", "partial", "fail"]
+    comment: str  # one sentence
+
+
+class ScenarioJudgement(BaseModel):
+    model: str  # the judge model
+    mock: bool  # canned verdicts
+    latency_ms: int
+    summary: str  # one or two sentences on all the answers
+    overall_score: int  # 0-100, the mean of the scenario scores
+    passed: int
+    results: list[ScenarioVerdict]  # in the order of the request
+
+
 class InterviewQuestion(BaseModel):
     id: str
     question: str

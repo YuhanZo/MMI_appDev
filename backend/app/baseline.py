@@ -21,8 +21,11 @@ class BaselineError(Exception):
     """The baseline model couldn't be reached or returned an error."""
 
 
-def chat(prompt: str) -> dict[str, Any]:
-    """Send one user message; returns {"text", "input_tokens", "output_tokens"}."""
+def chat(prompt: str, model: str | None = None) -> dict[str, Any]:
+    """Send one user message; returns {"text", "input_tokens", "output_tokens"}.
+
+    `model` defaults to BASELINE_MODEL; the Scenario Test's judge passes its own.
+    """
     try:
         with httpx.Client(
             base_url=settings.baseline_base_url,
@@ -31,7 +34,7 @@ def chat(prompt: str) -> dict[str, Any]:
         ) as client:
             res = client.post(
                 "/chat/completions",
-                json={"model": settings.baseline_model, "messages": [{"role": "user", "content": prompt}]},
+                json={"model": model or settings.baseline_model, "messages": [{"role": "user", "content": prompt}]},
                 timeout=TIMEOUT_S,
             )
     except httpx.HTTPError as e:

@@ -138,6 +138,7 @@ SQLite.
 │   │   ├── resume.py          text from an uploaded resume (PDF, .docx, .txt)
 │   │   ├── baseline.py        general model for the Benchmark (OpenAI-compatible chat API)
 │   │   ├── benchmark.py       the same prompt to Aivana and the baseline: reply, speed, cost
+│   │   ├── scenarios.py       Scenario Test: 8 questions, Aivana's answers, one judge call, scores
 │   │   ├── job_api.py         JSearch client: query params, post-filters, 24 h disk cache
 │   │   ├── config.py          env-driven settings (reads .env)
 │   │   ├── db.py              engine + get_db session dependency
@@ -148,12 +149,14 @@ SQLite.
 │   │       ├── jobs.py        /api/jobs/search, /api/jobs/fit-analysis
 │   │       ├── interview.py   interview session, questions, and feedback APIs
 │   │       ├── profile.py     /api/profile/resume
-│   │       └── benchmark.py   /api/benchmark/chat
+│   │       ├── benchmark.py   /api/benchmark/chat
+│   │       └── scenarios.py   /api/scenarios, /api/scenarios/{id}/answer, /api/scenarios/judge
 │   └── tests/
 │       ├── conftest.py        throwaway SQLite per test, test client, no real Aivana calls
 │       ├── test_aivana_client.py
 │       ├── test_resume.py
 │       ├── test_benchmark.py
+│       ├── test_scenarios.py
 │       ├── test_fit_analysis_live.py
 │       ├── test_job_search_jsearch.py
 │       ├── test_health.py
@@ -175,6 +178,8 @@ SQLite.
         ├── features/profile   editable profile page and resume upload, saved in the browser
         ├── features/benchmark Aivana vs a general model: anonymous A/B answers, votes
         │                      (tally saved in the browser)
+        ├── features/scenarios Scenario Test dashboard: 8 questions, Aivana's answers,
+        │                      the judge's verdicts (last run saved in the browser)
         ├── App.css            layout and component styles (Google Drive-inspired)
         ├── index.css          color tokens (light + dark), base styles
         ├── icons.tsx          inline SVG icons
@@ -211,13 +216,16 @@ drift apart.
 | POST | `/api/interview/feedback` | `InterviewFeedback` (mocked) |
 | POST | `/api/interview/detailed-feedback` | prepared mode-specific detailed feedback |
 | GET | `/api/interview/summary?mode=behavioral\|technical` | legacy prepared summary endpoint; the interview workflow uses the session endpoint above |
+| GET | `/api/scenarios` | the Scenario Test's eight `Scenario`s: question and key points |
+| POST | `/api/scenarios/{id}/answer` | Aivana's answer to one scenario as a `ModelReply` (effort `auto`, the question unchanged); `404` for an unknown id; `429 {detail: {message, code: aivana_busy}}` while a Benchmark comparison or another answer runs |
+| POST | `/api/scenarios/judge` | `{answers: ScenarioAnswer[]}` → `ScenarioJudgement`: one call to the judge model grades every answer; `502 {detail: {message, code}}` if the judge fails (`judge_failed`) or its reply isn't the expected JSON (`bad_judgement`) |
 | POST | `/api/benchmark/chat` | `{prompt}` (1-4000 characters) → `BenchmarkResult`: the prompt, unchanged, sent once to Aivana and once to the baseline model in parallel; each reply has its text, speed, cost, tokens and any error; `429 {detail: {message, code: benchmark_busy}}` while another comparison runs |
 
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 94 tests
-cd frontend && npm test                 # 62 tests
+cd backend && .venv/bin/pytest          # 128 tests
+cd frontend && npm test                 # 84 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`
@@ -323,6 +331,24 @@ call, so speed and cost describe exactly that reply. Speed is measured by the ba
 around the call. Aivana's cost is the `usage.credits` it reports (the USD value of a
 credit isn't confirmed yet); the baseline's is its token counts times the prices
 above. Only one comparison runs at a time, to stay within Aivana's rate limits.
+
+## Scenario Test
+
+The Scenario Test tab (sidebar, below Benchmark) is a first, small benchmark run from
+a CSE student's point of view: eight questions a CSE student might ask, one per
+scenario type (basic Q&A, calculation, false premise, unknowable fact, CS concept,
+trade-off advice, critique, study plan). **Run scenario test** makes 9 calls: Aivana answers each question once, one at a time (effort `auto`, the question
+unchanged), then one call to a judge model grades all the answers. The judge is the
+baseline provider (`BASELINE_MODE`, `BASELINE_API_KEY`) with `JUDGE_MODEL`, which
+defaults to `BASELINE_MODEL`; in mock mode it returns canned verdicts.
+
+For each answer the judge checks the scenario's key points, scores correctness,
+helpfulness and honesty from 1 to 5, and adds a one-sentence comment; speed is scored
+from the measured latency, not by the judge. **View details** shows the four scores as
+a colour-coded bar chart with the comment; Aivana's answer, rendered from its Markdown,
+opens below it on request. The weighted score (35 / 30 / 25 / 10) and the dashboard's pass count and
+overall score come from those. The last run is kept in the browser, so reopening the
+tab spends nothing; if only the judge failed, **Judge again** re-sends the same answers.
 
 ## Job listings (JSearch)
 

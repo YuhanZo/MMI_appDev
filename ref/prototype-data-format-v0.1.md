@@ -447,6 +447,67 @@ page shows them in random order as Model A and Model B.
 
 ---
 
+## 13. Scenario Test
+
+`GET /api/scenarios` returns the eight `Scenario`s. `POST /api/scenarios/{id}/answer`
+returns Aivana's answer to one of them as a `ModelReply` (section 12).
+`POST /api/scenarios/judge` takes `{"answers": [ScenarioAnswer, ...]}` (1-8, no repeats)
+and returns a `ScenarioJudgement`.
+
+```json
+{
+  "id": "calculation",
+  "number": 2,
+  "type": "Calculation",
+  "title": "Compare two internship offers",
+  "question": "Two summer internships, ...",
+  "key_points": ["Offer A leaves $12,660 ...", "Offer B leaves $15,900 ...", "Concludes B leaves $3,240 more"]
+}
+```
+
+**ScenarioAnswer fields:** `scenario_id` (string), `text` (string, Aivana's answer,
+not empty), `latency_ms` (integer).
+
+```json
+{
+  "model": "gemini-3.5-flash",
+  "mock": false,
+  "latency_ms": 4100,
+  "summary": "Solid answers, one arithmetic slip.",
+  "overall_score": 86,
+  "passed": 1,
+  "results": [
+    {
+      "scenario_id": "calculation",
+      "correctness": 3,
+      "helpfulness": 4,
+      "honesty": 5,
+      "speed": 3,
+      "score": 72,
+      "key_points_met": [true, true, false],
+      "verdict": "partial",
+      "comment": "Got the difference wrong."
+    }
+  ]
+}
+```
+
+**ScenarioVerdict fields**
+
+| Field | Type |
+| --- | --- |
+| `scenario_id` | string |
+| `correctness`, `helpfulness`, `honesty` | integer 1-5 (from the judge) |
+| `speed` | integer 1-5 (from `latency_ms`: up to 10 s = 5, 20 s = 4, 30 s = 3, 45 s = 2, slower = 1) |
+| `score` | integer 0-100: 35% correctness, 30% helpfulness, 25% honesty, 10% speed, each as a fraction of 5 |
+| `key_points_met` | boolean[] (one per key point, in order) |
+| `verdict` | `pass` \| `partial` \| `fail` |
+| `comment` | string (one sentence) |
+
+`overall_score` is the mean of the scenario scores; `results` follow the order of the request.
+
+---
+
 ## Development Rule
 
 Frontend mock data and backend responses should follow these formats.

@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     # USD per million tokens, from the provider's price list; unset means cost isn't shown.
     baseline_price_in_per_m: float | None = None
     baseline_price_out_per_m: float | None = None
+    # The Scenario Test's judge: the baseline provider, with this model. Empty means
+    # baseline_model. A stronger model judges more reliably than a fast one.
+    judge_model: str = ""
 
     @model_validator(mode="after")
     def _modes_need_credentials(self) -> "Settings":

@@ -7,13 +7,14 @@ import InterviewWorkspace, {
 } from './features/interview/InterviewWorkspace'
 import JobSearchView from './features/jobs/JobSearchView'
 import ProfileView from './features/profile/ProfileView'
+import ScenarioTestView from './features/scenarios/ScenarioTestView'
 import { Icon, type IconName } from './icons'
 import type { InterviewMode } from './types'
 
 // Display-only user info for the account menu (no sign-in yet)
 const DEMO_USER = { name: 'Demo User', initials: 'DU' }
 
-type View = 'home' | 'jobs' | 'behavioral' | 'technical' | 'benchmark' | 'profile'
+type View = 'home' | 'jobs' | 'behavioral' | 'technical' | 'benchmark' | 'scenarios' | 'profile'
 
 const NAV: { view: View; label: string; icon: IconName }[] = [
   { view: 'home', label: 'Home', icon: 'sparkle' },
@@ -21,6 +22,7 @@ const NAV: { view: View; label: string; icon: IconName }[] = [
   { view: 'behavioral', label: 'Behavioral Interview', icon: 'mic' },
   { view: 'technical', label: 'Technical Interview', icon: 'search' },
   { view: 'benchmark', label: 'Benchmark', icon: 'chart' },
+  { view: 'scenarios', label: 'Scenario Test', icon: 'flask' },
 ]
 
 const HOME_OPTIONS: { view: View; title: string; description: string; icon: IconName }[] = [
@@ -263,6 +265,9 @@ export default function App() {
         </section>
         <section hidden={view !== 'benchmark'}>
           <BenchmarkView />
+        </section>
+        <section hidden={view !== 'scenarios'}>
+          <ScenarioTestView active={view === 'scenarios'} />
         </section>
         <section hidden={view !== 'profile'}>
           <ProfileView />
