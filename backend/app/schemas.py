@@ -20,6 +20,7 @@ ExperienceLevel = Literal["intern", "entry", "mid", "senior", "lead", "director"
 JobType = Literal["full_time", "part_time", "contract", "internship"]
 
 MAX_JOB_FUNCTIONS = 5  # each one is a separate JSearch request
+MAX_RESUME_CHARS = 15_000  # resume text kept from an upload; a long resume is ~5,000
 
 
 class JobSearchRequest(BaseModel):
@@ -54,6 +55,19 @@ class UserProfile(BaseModel):
     skills: list[str]
     education: str
     experience: str
+    # Career preferences and resume. Defaults keep older clients valid.
+    target_role: str = ""
+    preferred_location: str = ""
+    work_arrangement: str = ""
+    salary_range: str = ""
+    priorities: list[str] = []
+    resume_text: str = Field(default="", max_length=MAX_RESUME_CHARS)
+
+
+class ResumeUploadResult(BaseModel):
+    filename: str
+    text: str  # plain text, at most MAX_RESUME_CHARS
+    truncated: bool  # the file had more text than was kept
 
 
 class FitAnalysisRequest(BaseModel):

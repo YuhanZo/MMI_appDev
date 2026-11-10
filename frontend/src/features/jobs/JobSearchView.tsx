@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import { Icon } from '../../icons'
 import { type ExperienceLevel, type Job, type JobType, MAX_JOB_FUNCTIONS, type WorkModel } from '../../types'
 import CompanyLogo from './CompanyLogo'
@@ -33,26 +32,11 @@ function labelsOf<V extends string>(options: { value: V; label: string }[], sele
   return options.filter((o) => selected.includes(o.value)).map((o) => o.label)
 }
 
-export default function JobSearchView({
-  active,
-  onPracticeInterview,
-}: {
-  active: boolean
-  onPracticeInterview: (job: Job) => void
-}) {
+export default function JobSearchView({ onPracticeInterview }: { onPracticeInterview: (job: Job) => void }) {
   const js = useJobSearch()
   const f = js.filters
 
-  // Search with the default filters the first time the view is shown; after that,
-  // each confirmed filter change searches again.
-  const started = useRef(false)
-  useEffect(() => {
-    if (active && !started.current) {
-      started.current = true
-      void js.search()
-    }
-  }, [active, js])
-
+  // Filter changes only update the filters; the Search button runs the search.
   return (
     <>
       <div className="page-head">
@@ -87,7 +71,6 @@ export default function JobSearchView({
           value={f.job_functions}
           labels={f.job_functions}
           disabled={js.searching}
-          canConfirm={(draft) => draft.length > 0}
           onConfirm={(v) => js.applyFilter('job_functions', v)}
         >
           {(draft, setDraft) => (
@@ -129,6 +112,17 @@ export default function JobSearchView({
         >
           {(draft, setDraft) => <CheckboxList options={WORK_MODELS} selected={draft} onChange={setDraft} />}
         </FilterChip>
+
+        <button
+          type="button"
+          className="btn-filled"
+          disabled={!js.canSearch || js.searching}
+          title={js.canSearch ? undefined : 'Add a job function first'}
+          onClick={() => void js.search()}
+        >
+          <Icon name="search" size={18} />
+          {js.searching ? 'Searching…' : 'Search'}
+        </button>
       </div>
 
       {js.searchError && (
@@ -140,7 +134,7 @@ export default function JobSearchView({
       {js.searching ? (
         <p className="empty">Searching…</p>
       ) : !js.searched ? (
-        !js.searchError && <p className="empty">Choose your filters to see openings.</p>
+        !js.searchError && <p className="empty">Choose your filters, then press Search.</p>
       ) : js.jobs.length === 0 ? (
         <p className="empty">No jobs matched these filters. Try another job function, fewer filters, or another location.</p>
       ) : (

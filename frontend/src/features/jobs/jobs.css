@@ -173,6 +173,10 @@
   padding-left: 36px;
 }
 
+.chip-row .btn-filled {
+  min-height: var(--aivana-touch-preferred);
+}
+
 .chip-confirm {
   min-height: var(--aivana-touch-min);
   padding: var(--aivana-space-2);

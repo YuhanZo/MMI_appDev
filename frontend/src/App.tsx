@@ -242,7 +242,6 @@ export default function App() {
         </section>
         <section hidden={view !== 'jobs'}>
           <JobSearchView
-            active={view === 'jobs'}
             onPracticeInterview={(job) => launchInterview('behavioral', job.company, job.title)}
           />
         </section>

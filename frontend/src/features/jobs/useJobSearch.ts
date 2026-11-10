@@ -15,7 +15,7 @@ function isRateLimited(e: unknown): boolean {
 
 const DEFAULT_FILTERS: JobSearchRequest = {
   location: 'Columbus, OH',
-  job_functions: ['Software Engineer Intern'],
+  job_functions: [],
   experience_levels: [],
   job_types: [],
   work_models: [],
@@ -25,12 +25,13 @@ const DEFAULT_FILTERS: JobSearchRequest = {
 export function useJobSearch() {
   const [filters, setFilters] = useState<JobSearchRequest>(DEFAULT_FILTERS)
 
-  // Each confirmed filter change runs the search again.
+  // Filter changes only update the filters; the Search button runs the search.
   function applyFilter<K extends keyof JobSearchRequest>(key: K, value: JobSearchRequest[K]) {
-    const next = { ...filters, [key]: value }
-    setFilters(next)
-    void search(next)
+    setFilters((prev) => ({ ...prev, [key]: value }))
   }
+
+  // The backend needs at least one job function to search.
+  const canSearch = filters.job_functions.length > 0
 
   const [jobs, setJobs] = useState<Job[]>([])
   const [searched, setSearched] = useState(false)
@@ -127,6 +128,7 @@ export function useJobSearch() {
   }
 
   async function search(request: JobSearchRequest = filters) {
+    if (request.job_functions.length === 0) return
     pendingKey.current = null
     queued.current = null
     setWaiting(false)
@@ -153,6 +155,7 @@ export function useJobSearch() {
   return {
     filters,
     applyFilter,
+    canSearch,
     jobs,
     searched,
     searching,
