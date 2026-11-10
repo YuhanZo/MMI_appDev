@@ -14,6 +14,7 @@ import type {
   InterviewSummary,
   Job,
   JobSearchRequest,
+  ResumeUploadResult,
 } from './types'
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -62,6 +63,16 @@ export const searchJobs = (req: JobSearchRequest) => post<Job[]>('/api/jobs/sear
 
 export const fitAnalysis = (req: FitAnalysisRequest) =>
   post<FitAnalysisResult>('/api/jobs/fit-analysis', req)
+
+/** Sends a resume file and gets its text back. Not through `request`: a file upload must
+ * not set a JSON Content-Type, so the browser can set multipart with its boundary. */
+export async function uploadResume(file: File): Promise<ResumeUploadResult> {
+  const body = new FormData()
+  body.append('file', file)
+  const res = await fetch('/api/profile/resume', { method: 'POST', body })
+  if (!res.ok) throw await apiError(res)
+  return res.json() as Promise<ResumeUploadResult>
+}
 
 export const getQuestions = (mode?: InterviewMode) =>
   request<InterviewQuestion[]>(

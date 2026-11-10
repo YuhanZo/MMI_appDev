@@ -1,4 +1,5 @@
-import { useState, type KeyboardEvent } from 'react'
+import { useRef, useState, type KeyboardEvent } from 'react'
+import * as api from '../../api'
 import {
   CAREER_PRIORITIES,
   WORK_ARRANGEMENTS,
@@ -28,6 +29,11 @@ export default function ProfileView() {
   const [editing, setEditing] = useState(false)
   const [newSkill, setNewSkill] = useState('')
 
+  const [uploading, setUploading] = useState(false)
+  const [resumeError, setResumeError] = useState('')
+  const [resumeNote, setResumeNote] = useState('')
+  const fileInput = useRef<HTMLInputElement>(null)
+
   function update<K extends keyof CareerProfile>(field: K, value: CareerProfile[K]) {
     setDraft((current) => ({ ...current, [field]: value }))
   }
@@ -50,6 +56,39 @@ export default function ProfileView() {
     setProfile(saved)
     setEditing(false)
     setNewSkill('')
+  }
+
+  // The resume is saved as soon as it's uploaded or removed, without Save Changes.
+  // An open edit keeps its other unsaved changes and picks up the new resume.
+  function applyResume(resumeText: string, resumeFileName: string) {
+    const saved = { ...cloneProfile(profile), resumeText, resumeFileName }
+    saveCareerProfile(saved)
+    setProfile(saved)
+    setDraft((current) => ({ ...current, resumeText, resumeFileName }))
+  }
+
+  async function uploadResume(file: File) {
+    setUploading(true)
+    setResumeError('')
+    setResumeNote('')
+    try {
+      const result = await api.uploadResume(file)
+      applyResume(result.text, result.filename)
+      if (result.truncated) {
+        setResumeNote('Your resume is long, so only the first part of its text was kept.')
+      }
+    } catch (e) {
+      setResumeError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setUploading(false)
+      if (fileInput.current) fileInput.current.value = '' // so the same file can be picked again
+    }
+  }
+
+  function removeResume() {
+    applyResume('', '')
+    setResumeError('')
+    setResumeNote('')
   }
 
   function addSkill() {
@@ -178,6 +217,54 @@ export default function ProfileView() {
               ) : checked ? <span key={priority}>{priority}</span> : null
             })}
           </div>
+        </section>
+
+        <section className="career-profile-card career-profile-resume" aria-labelledby="resume-title" aria-busy={uploading}>
+          <div className="career-profile-card-heading"><div><p className="career-profile-card-kicker">Used in fit analysis</p><h2 id="resume-title">Resume</h2></div></div>
+          <p className="career-profile-helper">Upload a PDF, Word (.docx) or .txt file. Fit analysis reads its text along with your profile.</p>
+
+          {profile.resumeText ? (
+            <div className="career-profile-resume-file">
+              <strong>{profile.resumeFileName || 'Resume'}</strong>
+              <span>{profile.resumeText.length.toLocaleString()} characters of text</span>
+            </div>
+          ) : (
+            <p className="career-profile-summary">No resume uploaded yet.</p>
+          )}
+
+          <div className="career-profile-resume-actions">
+            <input
+              ref={fileInput}
+              id="resume-file"
+              type="file"
+              accept=".pdf,.docx,.txt"
+              className="visually-hidden"
+              tabIndex={-1}
+              aria-label="Resume file"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) void uploadResume(file)
+              }}
+            />
+            <button type="button" className="btn-filled" disabled={uploading} onClick={() => fileInput.current?.click()}>
+              {uploading ? 'Reading resume…' : profile.resumeText ? 'Replace Resume' : 'Upload Resume'}
+            </button>
+            {profile.resumeText && (
+              <button type="button" className="btn-outline" disabled={uploading} onClick={removeResume}>
+                Remove
+              </button>
+            )}
+          </div>
+
+          {resumeNote && <p className="career-profile-resume-note" role="status">{resumeNote}</p>}
+          {resumeError && <p className="error" role="alert">{resumeError}</p>}
+
+          {profile.resumeText && (
+            <details className="career-profile-resume-text">
+              <summary>Show the text fit analysis reads</summary>
+              <pre>{profile.resumeText}</pre>
+            </details>
+          )}
         </section>
       </div>
     </div>

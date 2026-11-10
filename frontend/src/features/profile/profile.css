@@ -315,6 +315,65 @@
   font-size: 13px;
 }
 
+/* Resume */
+.career-profile-resume {
+  grid-column: 1 / -1;
+}
+
+.career-profile-resume-file {
+  display: flex;
+  flex-direction: column;
+  padding: var(--aivana-space-3);
+  border-radius: var(--aivana-radius-md);
+  background: var(--aivana-color-surface-row);
+}
+
+.career-profile-resume-file strong {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.career-profile-resume-file span,
+.career-profile-resume-note {
+  color: var(--aivana-color-text-secondary);
+  font-size: 13px;
+}
+
+.career-profile-resume-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--aivana-space-2);
+  margin-top: var(--aivana-space-4);
+}
+
+.career-profile-resume-note {
+  margin: var(--aivana-space-3) 0 0;
+}
+
+.career-profile-resume-text {
+  margin-top: var(--aivana-space-4);
+  border: 1px solid var(--aivana-color-border-hairline);
+  border-radius: var(--aivana-radius-md);
+}
+
+.career-profile-resume-text summary {
+  min-height: var(--aivana-touch-min);
+  padding: var(--aivana-space-2) var(--aivana-space-3);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.career-profile-resume-text pre {
+  max-height: 320px;
+  margin: 0;
+  padding: 0 var(--aivana-space-3) var(--aivana-space-3);
+  overflow-y: auto;
+  color: var(--aivana-color-text-secondary);
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 900px) {
   .career-profile-grid {
     grid-template-columns: minmax(0, 1fr);

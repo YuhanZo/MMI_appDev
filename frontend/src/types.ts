@@ -29,6 +29,18 @@ export interface UserProfile {
   skills: string[]
   education: string
   experience: string
+  target_role: string
+  preferred_location: string
+  work_arrangement: string
+  salary_range: string
+  priorities: string[]
+  resume_text: string // '' when no resume is uploaded
+}
+
+export interface ResumeUploadResult {
+  filename: string
+  text: string // plain text extracted from the file
+  truncated: boolean // the file had more text than was kept
 }
 
 export interface FitAnalysisRequest {

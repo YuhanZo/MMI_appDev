@@ -29,6 +29,8 @@ export interface CareerProfile {
   salaryRange: string
   workArrangement: WorkArrangement
   priorities: CareerPriority[]
+  resumeText: string // '' when no resume is uploaded
+  resumeFileName: string
 }
 
 export const MOCK_CAREER_PROFILE: CareerProfile = {
@@ -45,7 +47,13 @@ export const MOCK_CAREER_PROFILE: CareerProfile = {
   salaryRange: '$70,000 – $90,000',
   workArrangement: 'Hybrid',
   priorities: ['Career Growth', 'Work-Life Balance', 'Salary'],
+  resumeText: '',
+  resumeFileName: '',
 }
+
+// Fields added after profiles were first saved. A stored profile without them gets
+// these values instead of failing validation and being replaced by the mock profile.
+const ADDED_FIELD_DEFAULTS = { resumeText: '', resumeFileName: '' }
 
 function cloneProfile(profile: CareerProfile): CareerProfile {
   return { ...profile, skills: [...profile.skills], priorities: [...profile.priorities] }
@@ -69,6 +77,8 @@ function isCareerProfile(value: unknown): value is CareerProfile {
     'targetRole',
     'preferredLocation',
     'salaryRange',
+    'resumeText',
+    'resumeFileName',
   ]
 
   return (
@@ -82,12 +92,22 @@ function isCareerProfile(value: unknown): value is CareerProfile {
   )
 }
 
+/** True once the user has saved their own profile; until then the mock profile is used. */
+export function hasSavedProfile(): boolean {
+  try {
+    return localStorage.getItem(PROFILE_STORAGE_KEY) !== null
+  } catch {
+    return false
+  }
+}
+
 export function loadCareerProfile(): CareerProfile {
   try {
     const stored = localStorage.getItem(PROFILE_STORAGE_KEY)
     if (!stored) return cloneProfile(MOCK_CAREER_PROFILE)
     const parsed: unknown = JSON.parse(stored)
-    return isCareerProfile(parsed) ? cloneProfile(parsed) : cloneProfile(MOCK_CAREER_PROFILE)
+    const withDefaults = parsed && typeof parsed === 'object' ? { ...ADDED_FIELD_DEFAULTS, ...parsed } : parsed
+    return isCareerProfile(withDefaults) ? cloneProfile(withDefaults) : cloneProfile(MOCK_CAREER_PROFILE)
   } catch {
     return cloneProfile(MOCK_CAREER_PROFILE)
   }
@@ -97,7 +117,7 @@ export function saveCareerProfile(profile: CareerProfile): void {
   localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
 }
 
-/** The subset the API's UserProfile (shared data format) carries, for fit analysis. */
+/** The profile in the API's UserProfile format, for fit analysis. */
 export function toUserProfile(profile: CareerProfile): UserProfile {
   const school = [profile.university, profile.graduationYear && `class of ${profile.graduationYear}`]
     .filter(Boolean)
@@ -106,5 +126,11 @@ export function toUserProfile(profile: CareerProfile): UserProfile {
     skills: [...profile.skills],
     education: [profile.major, school].filter(Boolean).join(', '),
     experience: [profile.experienceLevel, profile.experienceSummary].filter(Boolean).join('. '),
+    target_role: profile.targetRole,
+    preferred_location: profile.preferredLocation,
+    work_arrangement: profile.workArrangement,
+    salary_range: profile.salaryRange,
+    priorities: [...profile.priorities],
+    resume_text: profile.resumeText,
   }
 }
