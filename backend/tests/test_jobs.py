@@ -2,7 +2,10 @@
 
 from app.models import SearchLog
 
-JOB_FIELDS = {"id", "title", "company", "location", "description", "url", "company_logo"}
+JOB_FIELDS = {
+    "id", "title", "company", "location", "description", "url", "company_logo",
+    "posted_at", "employment_type", "work_model", "salary", "benefits", "employer_website", "publisher",
+}
 FIT_FIELDS = {"summary", "strengths", "gaps", "recommendations"}
 
 
@@ -70,3 +73,14 @@ def test_fit_analysis_rejects_a_malformed_job(client, sample_profile):
         json={"job": {"id": "job_001"}, "user_profile": sample_profile},
     )
     assert res.status_code == 422
+
+
+def test_the_fit_prompt_includes_pay_and_job_type_but_not_display_only_details(sample_job, sample_profile):
+    from app.fit_analysis import build_prompt
+    from app.schemas import FitAnalysisRequest
+
+    job = {**sample_job, "salary": "$90K–$116K a year", "employment_type": "Full-time", "work_model": "onsite",
+           "posted_at": "1 day ago", "publisher": "Indeed", "employer_website": "https://acme.example"}
+    prompt = build_prompt(FitAnalysisRequest(job=job, user_profile=sample_profile))
+    assert "$116K a year" in prompt and "Full-time" in prompt and "onsite" in prompt
+    assert "1 day ago" not in prompt and "Indeed" not in prompt and "acme.example" not in prompt

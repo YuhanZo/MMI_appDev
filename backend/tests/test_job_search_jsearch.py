@@ -63,6 +63,13 @@ def test_listings_are_mapped_to_the_shared_job_format(client, jsearch):
             "description": "Build services in Python.",
             "url": "https://acme.example/apply",
             "company_logo": "https://logo.example/acme.png",
+            "posted_at": "",
+            "employment_type": "",
+            "work_model": "onsite",
+            "salary": "",
+            "benefits": [],
+            "employer_website": "",
+            "publisher": "",
         }
     ]
     assert calls[0]["query"] == "Software Engineer Intern in Columbus, OH"
@@ -137,3 +144,49 @@ def test_jsearch_mode_requires_a_key():
 
     with pytest.raises(ValidationError, match="JOB_API_MODE=jsearch needs"):
         Settings(_env_file=None, job_api_mode="jsearch", jsearch_api_key="")
+
+
+def test_job_page_details_are_mapped_when_the_posting_has_them():
+    job = job_api.to_job(
+        listing(
+            "d",
+            "Data Analyst Intern",
+            job_posted_at="1 day ago",
+            job_employment_type="Internship",
+            job_salary_string="28K–39K a year",
+            job_benefits_strings=["Health insurance", "", "401(k)"],
+            employer_website="https://acme.example",
+            job_publisher="Indeed",
+        )
+    )
+    assert job["posted_at"] == "1 day ago"
+    assert job["employment_type"] == "Internship"
+    assert job["salary"] == "28K–39K a year"
+    assert job["benefits"] == ["Health insurance", "401(k)"]
+    assert (job["employer_website"], job["publisher"]) == ("https://acme.example", "Indeed")
+
+
+@pytest.mark.parametrize(
+    ("fields", "salary"),
+    [
+        ({"job_min_salary": 30, "job_max_salary": 40, "job_salary_period": "HOUR"}, "$30–$40 an hour"),
+        ({"job_min_salary": 90000, "job_max_salary": 116000, "job_salary_period": "YEAR"}, "$90K–$116K a year"),
+        ({"job_min_salary": 75000}, "$75K"),
+        ({}, ""),
+    ],
+)
+def test_salary_is_built_from_min_and_max_when_there_is_no_text(fields, salary):
+    assert job_api.salary_text(fields) == salary
+
+
+@pytest.mark.parametrize(
+    ("fields", "work_model"),
+    [
+        ({"job_is_remote": True}, "remote"),
+        ({"job_is_remote": False, "job_description": "Hybrid: 3 days in the office."}, "hybrid"),
+        ({"job_is_remote": False}, "onsite"),
+        ({"job_is_remote": None}, ""),  # the posting doesn't say
+    ],
+)
+def test_work_model_is_blank_when_the_posting_does_not_say(fields, work_model):
+    assert job_api.to_job(listing("w", "Engineer", **fields))["work_model"] == work_model

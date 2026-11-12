@@ -28,7 +28,10 @@ def _clip(text: str, limit: int) -> str:
 
 
 def build_prompt(req: FitAnalysisRequest) -> str:
-    job = req.job.model_dump(exclude={"id", "url", "company_logo"})
+    # Salary, employment type and work model help the analysis; the rest is for display.
+    job = req.job.model_dump(
+        exclude={"id", "url", "company_logo", "posted_at", "benefits", "employer_website", "publisher"}
+    )
     job["description"] = _clip(job["description"], JOB_DESCRIPTION_CHARS)
     profile = req.user_profile.model_dump(exclude={"resume_text"})
     resume_text = _clip(req.user_profile.resume_text.strip(), RESUME_CHARS)

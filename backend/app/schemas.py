@@ -49,6 +49,14 @@ class Job(BaseModel):
     description: str
     url: str
     company_logo: str = ""  # image URL
+    # Details for the job page; '' or [] when the posting doesn't say.
+    posted_at: str = ""  # e.g. "1 day ago"
+    employment_type: str = ""  # e.g. "Full-time"
+    work_model: Literal["onsite", "hybrid", "remote", ""] = ""
+    salary: str = ""  # e.g. "$28K–39K a year"
+    benefits: list[str] = []
+    employer_website: str = ""
+    publisher: str = ""  # the site the posting is from, e.g. "Indeed"
 
 
 class UserProfile(BaseModel):

@@ -156,71 +156,6 @@
   color: var(--aivana-color-text-disabled);
 }
 
-/* Job details in the fit panel, shown before the analysis finishes */
-.fit-title a {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--aivana-color-action-link);
-  text-decoration: none;
-}
-
-.fit-title a:hover {
-  text-decoration: underline;
-}
-
-.fit-title a:focus-visible {
-  outline: var(--aivana-focus-ring);
-  outline-offset: var(--aivana-focus-offset);
-}
-
-.job-details {
-  margin-bottom: var(--aivana-space-4);
-  border: 1px solid var(--aivana-color-border-hairline);
-  border-radius: var(--aivana-radius-md);
-}
-
-.job-details summary {
-  display: flex;
-  align-items: center;
-  gap: var(--aivana-space-2);
-  min-height: var(--aivana-touch-min);
-  padding: 0 var(--aivana-space-3);
-  font-weight: 600;
-  cursor: pointer;
-  list-style: none;
-}
-
-.job-details summary::-webkit-details-marker {
-  display: none;
-}
-
-.job-details:not([open]) summary svg {
-  transform: rotate(-90deg);
-}
-
-.job-details summary svg {
-  transition: transform var(--aivana-motion-fast);
-}
-
-.job-details p {
-  max-height: 320px;
-  margin: 0;
-  padding: 0 var(--aivana-space-3) var(--aivana-space-3);
-  overflow-y: auto;
-  color: var(--aivana-color-text-secondary);
-  white-space: pre-line;
-}
-
-.fit-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--aivana-space-2);
-  margin-bottom: var(--aivana-space-4);
-  padding-bottom: var(--aivana-space-4);
-  border-bottom: 1px solid var(--aivana-color-border-hairline);
-}
-
 /* Free-text job description: the search text */
 .job-describe {
   display: flex;
@@ -257,4 +192,167 @@
 
 .job-describe input::placeholder {
   color: var(--aivana-color-text-placeholder);
+}
+
+.job-facts {
+  color: var(--aivana-color-text-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* A job's own page */
+.job-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aivana-space-4);
+}
+
+.job-back {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: var(--aivana-space-1);
+  min-height: var(--aivana-touch-min);
+  padding: 0 var(--aivana-space-2) 0 0;
+  border: 0;
+  background: none;
+  color: var(--aivana-color-text-secondary);
+  font-weight: 600;
+}
+
+.job-back:hover {
+  color: var(--aivana-color-text-primary);
+}
+
+.job-page-head h2 {
+  margin: var(--aivana-space-3) 0 var(--aivana-space-1);
+  font-size: 26px;
+  line-height: 1.25;
+}
+
+.job-page-company {
+  display: flex;
+  align-items: center;
+  gap: var(--aivana-space-3);
+}
+
+.job-page-company-name {
+  margin: 0;
+  font-weight: 600;
+}
+
+.job-page-company a {
+  color: var(--aivana-color-text-secondary);
+  font-size: 13px;
+}
+
+.job-page-posted {
+  margin: 0;
+  color: var(--aivana-color-text-secondary);
+  font-size: 13px;
+}
+
+.job-page-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--aivana-space-2);
+  margin-top: var(--aivana-space-4);
+}
+
+.job-share-note {
+  color: var(--aivana-color-text-secondary);
+  font-size: 13px;
+}
+
+.job-page-body {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(280px, 2fr);
+  align-items: start;
+  gap: var(--aivana-space-6);
+}
+
+.job-page-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.job-section {
+  padding: var(--aivana-space-4) 0;
+  border-top: 1px solid var(--aivana-color-border-hairline);
+}
+
+.job-section h3 {
+  margin: 0 0 var(--aivana-space-3);
+  font-size: 16px;
+}
+
+.job-glance,
+.job-offers {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.job-glance {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aivana-space-3);
+}
+
+.job-glance li {
+  display: flex;
+  align-items: center;
+  gap: var(--aivana-space-3);
+  font-weight: 600;
+}
+
+.job-glance svg {
+  flex-shrink: 0;
+  color: var(--aivana-color-text-secondary);
+}
+
+.job-description {
+  margin: 0;
+  color: var(--aivana-color-text-primary);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.job-description.folded {
+  max-height: 12em;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(#000 70%, transparent);
+  mask-image: linear-gradient(#000 70%, transparent);
+}
+
+.job-more {
+  margin-top: var(--aivana-space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--aivana-color-text-primary);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.job-offers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--aivana-space-2);
+}
+
+.job-offers li {
+  padding: var(--aivana-space-1) var(--aivana-space-3);
+  border: 1px solid var(--aivana-color-border-hairline);
+  border-radius: var(--aivana-radius-pill);
+  background: var(--aivana-color-surface-row);
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .job-page-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

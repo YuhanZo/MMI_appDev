@@ -24,6 +24,14 @@ export interface Job {
   description: string
   url: string
   company_logo: string // image URL
+  // Details for the job page; '' or [] when the posting doesn't say.
+  posted_at?: string // e.g. "1 day ago"
+  employment_type?: string // e.g. "Full-time"
+  work_model?: 'onsite' | 'hybrid' | 'remote' | ''
+  salary?: string // e.g. "$28K–39K a year"
+  benefits?: string[]
+  employer_website?: string
+  publisher?: string // the site the posting is from, e.g. "Indeed"
 }
 
 export interface UserProfile {

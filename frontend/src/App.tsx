@@ -6,10 +6,11 @@ import InterviewWorkspace, {
   type InterviewLaunchRequest,
 } from './features/interview/InterviewWorkspace'
 import JobSearchView from './features/jobs/JobSearchView'
+import { loadSavedJobs, saveSavedJobs, toggleSaved } from './features/jobs/savedJobs'
 import ProfileView from './features/profile/ProfileView'
 import ScenarioTestView from './features/scenarios/ScenarioTestView'
 import { Icon, type IconName } from './icons'
-import type { InterviewMode } from './types'
+import type { InterviewMode, Job } from './types'
 
 // Display-only user info for the account menu (no sign-in yet)
 const DEMO_USER = { name: 'Demo User', initials: 'DU' }
@@ -65,7 +66,15 @@ function HomeView({ onSelect }: { onSelect: (view: View) => void }) {
   )
 }
 
-function ProfileMenu({ onOpenProfile }: { onOpenProfile: () => void }) {
+function ProfileMenu({
+  onOpenProfile,
+  savedCount,
+  onOpenSaved,
+}: {
+  onOpenProfile: () => void
+  savedCount: number
+  onOpenSaved: () => void
+}) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -113,6 +122,16 @@ function ProfileMenu({ onOpenProfile }: { onOpenProfile: () => void }) {
             }}
           >
             My Profile
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false)
+              onOpenSaved()
+            }}
+          >
+            Saved jobs ({savedCount})
           </button>
           <button type="button" role="menuitem" disabled title="Sign-in is not built yet">
             Log out
@@ -170,6 +189,16 @@ function useTheme() {
 
 export default function App() {
   const [view, setView] = useState<View>('home')
+  // Saved jobs live here so the account menu can count them and open the list.
+  const [savedJobs, setSavedJobs] = useState<Job[]>(loadSavedJobs)
+  const [showSaved, setShowSaved] = useState(false)
+  const [savedRequest, setSavedRequest] = useState(0) // bumped each time the menu opens the list
+
+  function toggleSavedJob(job: Job) {
+    const next = toggleSaved(savedJobs, job)
+    setSavedJobs(next)
+    saveSavedJobs(next)
+  }
   const [status, setStatus] = useState('checking...')
   const [interviewLaunch, setInterviewLaunch] = useState<
     (InterviewLaunchRequest & { mode: InterviewMode }) | null
@@ -220,7 +249,15 @@ export default function App() {
               <span className="theme-toggle-label">Dark mode</span>
             </button>
 
-            <ProfileMenu onOpenProfile={() => setView('profile')} />
+            <ProfileMenu
+              onOpenProfile={() => setView('profile')}
+              savedCount={savedJobs.length}
+              onOpenSaved={() => {
+                setShowSaved(true)
+                setSavedRequest((n) => n + 1)
+                setView('jobs')
+              }}
+            />
           </div>
       </header>
 
@@ -246,6 +283,11 @@ export default function App() {
         </section>
         <section hidden={view !== 'jobs'}>
           <JobSearchView
+            saved={savedJobs}
+            onToggleSave={toggleSavedJob}
+            showSaved={showSaved}
+            savedRequest={savedRequest}
+            onShowSaved={setShowSaved}
             onPracticeInterview={(job) => launchInterview('behavioral', job.company, job.title)}
           />
         </section>

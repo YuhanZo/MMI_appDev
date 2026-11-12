@@ -114,7 +114,25 @@ def filter_listings(listings: list[dict[str, Any]], req: SearchFilters) -> list[
 
 #  Reading response 
 
-def to_job(raw: dict[str, Any]) -> dict[str, str] | None:
+def salary_text(raw: dict[str, Any]) -> str:
+    """The posting's salary as JSearch words it, or built from its min / max; '' if not listed."""
+    if raw.get("job_salary_string"):
+        return str(raw["job_salary_string"])
+    low, high = raw.get("job_min_salary"), raw.get("job_max_salary")
+    if not isinstance(low, (int, float)) and not isinstance(high, (int, float)):
+        return ""
+
+    def money(v: float) -> str:
+        return f"${v / 1000:.0f}K" if v >= 1000 else f"${v:g}"
+
+    amount = "–".join(money(v) for v in (low, high) if isinstance(v, (int, float)))
+    period = str(raw.get("job_salary_period") or "").lower()
+    if not period:
+        return amount
+    return f"{amount} {'an' if period == 'hour' else 'a'} {period}"
+
+
+def to_job(raw: dict[str, Any]) -> dict[str, Any] | None:
     """Map one JSearch listing to the shared Job format. Skips incomplete listings."""
     job_id, title = raw.get("job_id"), raw.get("job_title")
     if not job_id or not title:
@@ -126,6 +144,10 @@ def to_job(raw: dict[str, Any]) -> dict[str, str] | None:
     if raw.get("job_is_remote"):
         location = f"{location} (Remote)" if location else "Remote"
 
+    # Unknown when the posting says nothing about remote work.
+    known = raw.get("job_is_remote") is not None or raw.get("work_arrangement")
+    benefits = raw.get("job_benefits_strings") or []
+
     return {
         "id": str(job_id),
         "title": title,
@@ -134,6 +156,13 @@ def to_job(raw: dict[str, Any]) -> dict[str, str] | None:
         "description": raw.get("job_description") or "",
         "url": raw.get("job_apply_link") or raw.get("job_google_link") or "",
         "company_logo": raw.get("employer_logo") or "",
+        "posted_at": raw.get("job_posted_at") or "",
+        "employment_type": raw.get("job_employment_type") or "",
+        "work_model": work_model_of(raw) if known else "",
+        "salary": salary_text(raw),
+        "benefits": [str(b) for b in benefits if b] if isinstance(benefits, list) else [],
+        "employer_website": raw.get("employer_website") or "",
+        "publisher": raw.get("job_publisher") or "",
     }
 
 

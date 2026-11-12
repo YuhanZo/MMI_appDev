@@ -54,7 +54,14 @@ Normalized job data returned to the frontend.
   "location": "Columbus, OH",
   "description": "Build backend services using Python and AWS.",
   "url": "https://example.com/job/001",
-  "company_logo": "https://example.com/logo.png"
+  "company_logo": "https://example.com/logo.png",
+  "posted_at": "1 day ago",
+  "employment_type": "Full-time",
+  "work_model": "onsite",
+  "salary": "$90K–$116K a year",
+  "benefits": ["Health insurance", "401(k)"],
+  "employer_website": "https://www.example.com",
+  "publisher": "Indeed"
 }
 ```
 
@@ -69,6 +76,16 @@ Normalized job data returned to the frontend.
 | `description` | string |
 | `url` | string (apply link) |
 | `company_logo` | string (image URL, `""` if none) |
+| `posted_at` | string (e.g. `"1 day ago"`, `""` if not listed) |
+| `employment_type` | string (e.g. `"Full-time"`, `""` if not listed) |
+| `work_model` | `onsite` \| `hybrid` \| `remote` \| `""` (`""` when the posting doesn't say) |
+| `salary` | string (e.g. `"$90K–$116K a year"`, `""` if not listed) |
+| `benefits` | string[] (`[]` if none listed) |
+| `employer_website` | string (`""` if none) |
+| `publisher` | string (the site the posting is from, e.g. `"Indeed"`; `""` if unknown) |
+
+The fields after `company_logo` are optional (they have defaults) and are shown on the
+job's page; fit analysis also sends `salary`, `employment_type` and `work_model` to Aivana.
 
 ---
 

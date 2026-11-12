@@ -172,7 +172,8 @@ SQLite.
         ├── main.tsx           React entry
         ├── App.tsx            shell: top bar, account menu, sidebar, Home, and which
         │                      view is showing
-        ├── features/jobs      job description box + filter chips, result cards, fit panel
+        ├── features/jobs      description box + filter chips, result cards, job page with
+        │                      fit analysis, saved jobs (kept in the browser)
         ├── features/interview setup, five-question session, feedback,
         │                      completion and summary components
         ├── features/profile   editable profile page and resume upload, saved in the browser
@@ -224,8 +225,8 @@ drift apart.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 128 tests
-cd frontend && npm test                 # 83 tests
+cd backend && .venv/bin/pytest          # 138 tests
+cd frontend && npm test                 # 88 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`
@@ -277,8 +278,8 @@ format retry share one budget per analysis: **at most 3 Aivana calls within
 reuses a finished analysis when the exact same job and profile would be sent,
 and joins one that is still running, so re-opening a job doesn't spend another
 (rate-limited) request. It also runs one analysis at a time, since Aivana caps
-concurrent requests: a job clicked meanwhile waits, and only the last one
-clicked runs next. If Aivana still reports a rate or concurrency limit, the panel
+concurrent requests: a job opened meanwhile waits, and only the last one
+opened runs next (going back to the list drops the wait). If Aivana still reports a rate or concurrency limit, the panel
 explains it and offers Retry. (The template must be in the
 prompt: in testing, Aivana ignored format instructions given only in `system`.)
 
@@ -365,6 +366,15 @@ The Job Search page has one free-text box, "Describe a job you want" (up to 200
 characters), sent as the request's single job function; JSearch takes natural
 language, so a description like "remote backend internship with Python" works as is.
 The API still accepts up to five job functions.
+
+Results are listed without being analyzed. Opening a job shows its page: company,
+title, when and where it was posted, Apply externally / Save / Share / Practice
+interview, "At a glance" (pay, work model and location, job type), the description
+(long ones folded behind "Show more"), "What this job offers" (benefits), and the fit
+analysis, which starts when the page opens. Anything the posting doesn't say is left
+out. Saved jobs are kept in the browser; the account menu's "Saved jobs (n)" opens
+the list. Share uses the
+browser's share sheet, or copies the posting link where there is none.
 
 `backend/app/job_api.py` sends one request per job function (merging the results),
 with location, job types, experience and remote-only as JSearch parameters. It

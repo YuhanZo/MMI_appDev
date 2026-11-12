@@ -128,6 +128,23 @@ export function useJobSearch() {
     }
   }
 
+  // Opening a job shows its page and starts (or reuses) its fit analysis.
+  function open(job: Job) {
+    void analyze(job)
+  }
+
+  // Back to the list. An analysis still running keeps going and is kept for when the
+  // job is opened again; it just no longer updates the page.
+  function close() {
+    pendingKey.current = null
+    queued.current = null // a job waiting its turn would otherwise reopen when it starts
+    setSelected(null)
+    setFit(null)
+    setFitError('')
+    setAnalyzing(false)
+    setWaiting(false)
+  }
+
   // Failures aren't cached, so retrying just analyzes the selected job again.
   function retry() {
     if (selected) void analyze(selected)
@@ -149,8 +166,6 @@ export function useJobSearch() {
       const results = await api.searchJobs(request)
       setJobs(results)
       setSearched(true)
-      // Open the top result right away, like the mockup.
-      if (results.length > 0) void analyze(results[0])
     } catch (e) {
       setJobs([])
       setSearchError(`Search failed: ${String(e)}`)
@@ -176,6 +191,8 @@ export function useJobSearch() {
     fitError,
     search,
     analyze,
+    open,
+    close,
     retry,
   }
 }
