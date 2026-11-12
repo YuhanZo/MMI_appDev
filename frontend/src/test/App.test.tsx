@@ -296,6 +296,50 @@ describe('App', () => {
     expect(await screen.findByText(/Tell me about a challenging software project/)).toBeInTheDocument()
   })
 
+  it('links an interview started from a job back to that job', async () => {
+    mockApi()
+    const user = userEvent.setup()
+    render(<App />)
+    await searchAndOpen(user)
+    await user.click(screen.getByRole('button', { name: /Practice interview/ }))
+    expect(await screen.findByText('Example Company · Software Engineer Intern')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Back to Software Engineer Intern' }))
+    expect(screen.getByRole('article', { name: 'Software Engineer Intern' })).toBeVisible()
+    expect(screen.getByText('Overall fit summary.')).toBeInTheDocument() // still there
+  })
+
+  it('opens an empty setup from the sidebar after an interview started from a job', async () => {
+    mockApi()
+    const user = userEvent.setup()
+    render(<App />)
+    await searchAndOpen(user)
+    await user.click(screen.getByRole('button', { name: /Practice interview/ }))
+    await screen.findByText('Example Company · Software Engineer Intern')
+
+    await user.click(within(screen.getByRole('navigation', { name: 'Sections' })).getByRole('button', { name: 'Behavioral Interview' }))
+    const setup = screen.getByRole('region', { name: 'Behavioral Interview Setup' })
+    expect(within(setup).getByLabelText('Company')).toHaveValue('')
+    expect(within(setup).getByLabelText('Position / Job Title')).toHaveValue('')
+    expect(screen.queryByRole('button', { name: /^Back to/ })).not.toBeInTheDocument()
+  })
+
+  it('keeps an interview the user set up from the sidebar when they come back to it', async () => {
+    mockApi()
+    const user = userEvent.setup()
+    render(<App />)
+    const nav = within(screen.getByRole('navigation', { name: 'Sections' }))
+
+    await user.click(nav.getByRole('button', { name: 'Behavioral Interview' }))
+    const setupBefore = screen.getByRole('region', { name: 'Behavioral Interview Setup' })
+    await user.type(within(setupBefore).getByLabelText('Company'), 'Aivana')
+    await user.click(nav.getByRole('button', { name: 'Home' }))
+    await user.click(nav.getByRole('button', { name: 'Behavioral Interview' }))
+
+    const setup = screen.getByRole('region', { name: 'Behavioral Interview Setup' })
+    expect(within(setup).getByLabelText('Company')).toHaveValue('Aivana')
+  })
+
   it('sends the search request in the shared data format', async () => {
     const fetchMock = mockApi()
     const user = userEvent.setup()

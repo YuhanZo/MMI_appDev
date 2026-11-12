@@ -228,7 +228,7 @@ drift apart.
 
 ```bash
 cd backend && .venv/bin/pytest          # 150 tests
-cd frontend && npm test                 # 90 tests
+cd frontend && npm test                 # 91 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`
@@ -407,7 +407,10 @@ interview, "At a glance" (pay, work model and location, job type), the descripti
 analysis, which starts when the page opens. Anything the posting doesn't say is left
 out. Saved jobs are kept in the browser; the account menu's "Saved jobs (n)" opens
 the list. Share uses the
-browser's share sheet, or copies the posting link where there is none.
+browser's share sheet, or copies the posting link where there is none. An interview started
+with Practice interview links back to the job; opening an interview from the sidebar
+or Home instead starts from an empty setup if the current one came from a job, while
+an interview the user set up themselves keeps its progress.
 
 `backend/app/job_api.py` sends one request per job function (merging the results),
 with location, job types, experience and remote-only as JSearch parameters. It

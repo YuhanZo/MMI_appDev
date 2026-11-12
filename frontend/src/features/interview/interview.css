@@ -13,6 +13,23 @@
   line-height: 1.15;
 }
 
+.interview-back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--aivana-space-1);
+  min-height: var(--aivana-touch-min);
+  margin-bottom: var(--aivana-space-1);
+  padding: 0 var(--aivana-space-2) 0 0;
+  border: 0;
+  background: none;
+  color: var(--aivana-color-text-secondary);
+  font-weight: 600;
+}
+
+.interview-back:hover {
+  color: var(--aivana-color-text-primary);
+}
+
 .interview-panel {
   border: 1px solid var(--aivana-color-border-hairline);
   border-radius: var(--aivana-radius-lg);

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as api from '../../api'
+import { Icon } from '../../icons'
 import type {
   InterviewAnswerType,
   InterviewMode,
@@ -26,12 +27,19 @@ export interface InterviewLaunchRequest {
 interface InterviewWorkspaceProps {
   mode: InterviewMode
   launchRequest?: InterviewLaunchRequest | null
+  // Changes when this interview should go back to an empty setup (e.g. opened from the
+  // sidebar after an interview that was started from a job).
+  resetRequest?: number
+  // Set when the interview was started from a job: a way back to that job's page.
+  back?: { label: string; onClick: () => void } | null
   onTryOtherMode: (mode: InterviewMode, company: string, position: string) => void
 }
 
 export default function InterviewWorkspace({
   mode,
   launchRequest = null,
+  resetRequest = 0,
+  back = null,
   onTryOtherMode,
 }: InterviewWorkspaceProps) {
   const [session, setSession] = useState<InterviewSessionState>(() => createSetupResetState(mode))
@@ -82,6 +90,15 @@ export default function InterviewWorkspace({
     lastLaunchNonce.current = launchRequest.nonce
     void beginInterview(launchRequest.company, launchRequest.position)
   }, [beginInterview, launchRequest])
+
+  const lastResetRequest = useRef(resetRequest)
+  useEffect(() => {
+    if (resetRequest === lastResetRequest.current) return
+    lastResetRequest.current = resetRequest
+    setSummary(null)
+    setQuestions([])
+    setSession(createSetupResetState(mode))
+  }, [mode, resetRequest])
 
   const question = questions[session.currentQuestion]
   const currentAnswer = question ? session.answers[question.id]?.value ?? '' : ''
@@ -198,6 +215,12 @@ export default function InterviewWorkspace({
     <div className="interview-workspace">
       <header className="interview-page-header">
         <div>
+          {back && (
+            <button type="button" className="interview-back" onClick={back.onClick}>
+              <Icon name="back" size={18} />
+              {back.label}
+            </button>
+          )}
           <h1>{modeLabel} Interview</h1>
         </div>
         <div className="interview-header-meta">

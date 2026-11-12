@@ -204,6 +204,9 @@ export default function App() {
     (InterviewLaunchRequest & { mode: InterviewMode }) | null
   >(null)
   const launchNonce = useRef(0)
+  // The job an interview was started from, if any, so the interview can link back to it.
+  const [interviewJob, setInterviewJob] = useState<{ mode: InterviewMode; title: string } | null>(null)
+  const [interviewReset, setInterviewReset] = useState({ behavioral: 0, technical: 0 })
   const { theme, toggle } = useTheme()
 
   useEffect(() => {
@@ -214,11 +217,23 @@ export default function App() {
   }, [])
 
   // Opens an interview straight at question one for a company and position, from a
-  // finished interview ("try the other mode") or from a job's fit panel.
-  function launchInterview(mode: InterviewMode, company: string, position: string) {
+  // finished interview ("try the other mode") or from a job's page.
+  function launchInterview(mode: InterviewMode, company: string, position: string, jobTitle: string | null = null) {
     launchNonce.current += 1
     setInterviewLaunch({ mode, company, position, nonce: launchNonce.current })
+    setInterviewJob(jobTitle ? { mode, title: jobTitle } : null)
     setView(mode)
+  }
+
+  // Opening a view from the sidebar or Home. An interview started from a job goes back
+  // to an empty setup, so it asks for a company instead of reusing that job's; one the
+  // user started here keeps its progress.
+  function openView(next: View) {
+    if ((next === 'behavioral' || next === 'technical') && interviewJob?.mode === next) {
+      setInterviewReset((r) => ({ ...r, [next]: r[next] + 1 }))
+      setInterviewJob(null)
+    }
+    setView(next)
   }
 
   const health = status.startsWith('ok') ? 'ok' : status === 'backend unreachable' ? 'down' : 'checking'
@@ -268,7 +283,7 @@ export default function App() {
             type="button"
             className={`nav-item${view === n.view ? ' active' : ''}`}
             aria-current={view === n.view ? 'page' : undefined}
-            onClick={() => setView(n.view)}
+            onClick={() => openView(n.view)}
           >
             <Icon name={n.icon} />
             {n.label}
@@ -279,7 +294,7 @@ export default function App() {
       { }
       <main className="panel">
         <section hidden={view !== 'home'}>
-          <HomeView onSelect={setView} />
+          <HomeView onSelect={openView} />
         </section>
         <section hidden={view !== 'jobs'}>
           <JobSearchView
@@ -288,21 +303,33 @@ export default function App() {
             showSaved={showSaved}
             savedRequest={savedRequest}
             onShowSaved={setShowSaved}
-            onPracticeInterview={(job) => launchInterview('behavioral', job.company, job.title)}
+            onPracticeInterview={(job) => launchInterview('behavioral', job.company, job.title, job.title)}
           />
         </section>
         <section hidden={view !== 'behavioral'}>
           <InterviewWorkspace
             mode="behavioral"
             launchRequest={interviewLaunch?.mode === 'behavioral' ? interviewLaunch : null}
-            onTryOtherMode={launchInterview}
+            resetRequest={interviewReset.behavioral}
+            back={
+              interviewJob?.mode === 'behavioral'
+                ? { label: `Back to ${interviewJob.title}`, onClick: () => setView('jobs') }
+                : null
+            }
+            onTryOtherMode={(m, company, position) => launchInterview(m, company, position, interviewJob?.title ?? null)}
           />
         </section>
         <section hidden={view !== 'technical'}>
           <InterviewWorkspace
             mode="technical"
             launchRequest={interviewLaunch?.mode === 'technical' ? interviewLaunch : null}
-            onTryOtherMode={launchInterview}
+            resetRequest={interviewReset.technical}
+            back={
+              interviewJob?.mode === 'technical'
+                ? { label: `Back to ${interviewJob.title}`, onClick: () => setView('jobs') }
+                : null
+            }
+            onTryOtherMode={(m, company, position) => launchInterview(m, company, position, interviewJob?.title ?? null)}
           />
         </section>
         <section hidden={view !== 'benchmark'}>
