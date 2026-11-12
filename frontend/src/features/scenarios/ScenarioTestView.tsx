@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as api from '../../api'
 import { Icon, type IconName } from '../../icons'
 import type { ModelReply, Scenario, ScenarioJudgement, ScenarioVerdict } from '../../types'
-import { Markdown } from './markdown'
+import { Markdown } from '../../markdown'
 import './scenarios.css'
 
 const ICONS: Record<string, IconName> = {

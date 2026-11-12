@@ -177,7 +177,7 @@ SQLite.
         │                      completion and summary components
         ├── features/profile   editable profile page and resume upload, saved in the browser
         ├── features/benchmark Aivana vs a general model: anonymous A/B answers, votes
-        │                      (tally saved in the browser)
+        │                      (scoreboard saved in the browser)
         ├── features/scenarios Scenario Test dashboard: 8 questions, Aivana's answers,
         │                      the judge's verdicts (last run saved in the browser)
         ├── App.css            layout and component styles (Google Drive-inspired)
@@ -310,13 +310,15 @@ and installs a transport that fails on any real request.
 
 ## Benchmark (Aivana vs a general model)
 
-The Benchmark tab (sidebar, below Technical Interview) works like a chatbot arena: you
-type any message, Aivana and one general model answer it side by side as Model A and
-Model B, in random order and without names, and you vote: A is better, B is better,
-Tie, or Both are bad. After the vote each side shows which model it was, how long it
-took and what it cost. The vote tally is kept in the browser. If a model fails, the
-round can't be voted on and both names show straight away, since errors name their model.
-Votes on mock replies aren't counted. Set in `backend/.env`:
+The Benchmark tab (sidebar, below Technical Interview) works like a chatbot arena, one
+step at a time: you ask a question; Aivana and one general model answer it side by side
+as Model A and Model B, in random order and without names (a timer shows while they
+work); you vote A is better, B is better, About the same, or Both are bad; then each side
+shows which model it was, how long it took and what it cost, your pick is highlighted,
+and "Ask another question" starts the next round. Answers are rendered as Markdown. A
+scoreboard of your votes is kept in the browser. If a model fails, the round can't be
+voted on and both names show straight away, since errors name their model. Votes on
+mock replies aren't counted. Set in `backend/.env`:
 
 | Variable | Value |
 | --- | --- |

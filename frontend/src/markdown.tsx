@@ -1,13 +1,15 @@
 import type { ReactNode } from 'react'
+import './markdown.css'
 
 // Just enough Markdown for model answers: paragraphs, headings, bullet and numbered
-// lists (nested by indent), fenced code, **bold** and `code`. It builds React elements
-// only, never HTML strings, so an answer can't inject markup.
+// lists (nested by indent), fenced code, **bold**, *italic* and `code`. It builds React
+// elements only, never HTML strings, so an answer can't inject markup.
 
 function inline(text: string): ReactNode[] {
-  return text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g).map((part, i) => {
+  return text.split(/(\*\*[^*]+\*\*|\*[^*\s][^*]*\*|`[^`]+`)/g).map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**') && part.length > 4) return <strong key={i}>{part.slice(2, -2)}</strong>
     if (part.startsWith('`') && part.endsWith('`') && part.length > 2) return <code key={i}>{part.slice(1, -1)}</code>
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) return <em key={i}>{part.slice(1, -1)}</em>
     return part
   })
 }
