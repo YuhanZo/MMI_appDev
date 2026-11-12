@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MOCK_CAREER_PROFILE, PROFILE_STORAGE_KEY } from '../profile/profileStorage'
@@ -422,5 +422,122 @@ describe('InterviewWorkspace', () => {
     const progress = screen.getByRole('complementary', { name: 'Interview progress' })
     expect(within(progress).getAllByText('Pending')).toHaveLength(5)
     expect(within(progress).getByText('0/50')).toBeInTheDocument()
+  })
+})
+
+/** A stand-in for the browser's speech recognition; tests drive it by hand. */
+class FakeRecognition {
+  static last: FakeRecognition | null = null
+  lang = ''
+  continuous = false
+  interimResults = false
+  onresult: ((event: { results: { isFinal: boolean; 0: { transcript: string } }[] }) => void) | null = null
+  onerror: ((event: { error: string }) => void) | null = null
+  onend: (() => void) | null = null
+  started = false
+  stopped = false
+
+  constructor() {
+    FakeRecognition.last = this
+  }
+
+  start() {
+    this.started = true
+  }
+
+  stop() {
+    this.stopped = true
+    this.onend?.()
+  }
+
+  abort() {
+    this.stop()
+  }
+
+  /** Each pair is [transcript, isFinal]. */
+  say(...parts: [string, boolean][]) {
+    act(() => this.onresult?.({ results: parts.map(([transcript, isFinal]) => ({ isFinal, 0: { transcript } })) }))
+  }
+}
+
+describe('answering by voice', () => {
+  afterEach(() => {
+    FakeRecognition.last = null
+  })
+
+  it('types what is said into the answer, after what was already typed', async () => {
+    vi.stubGlobal('SpeechRecognition', FakeRecognition)
+    mockInterviewApi()
+    const user = await startInterview('behavioral')
+    await user.type(await screen.findByLabelText('Your Answer'), 'In my internship,')
+
+    await user.click(screen.getByRole('button', { name: 'Speak' }))
+    const rec = FakeRecognition.last!
+    expect(rec).toMatchObject({ started: true, lang: 'en-US', continuous: true, interimResults: true })
+    expect(screen.getByRole('status')).toHaveTextContent('Listening…')
+
+    rec.say(['I explained our cache', false]) // still being said: shown as it comes
+    expect(screen.getByLabelText('Your Answer')).toHaveValue('In my internship, I explained our cache')
+    rec.say(['I explained our caching design', true], [' to the sales team', false])
+    expect(screen.getByLabelText('Your Answer')).toHaveValue(
+      'In my internship, I explained our caching design to the sales team',
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Stop' }))
+    expect(rec.stopped).toBe(true)
+    expect(screen.getByRole('button', { name: 'Speak' })).toBeInTheDocument()
+    expect(screen.queryByText('Listening…')).not.toBeInTheDocument()
+  })
+
+  it('stops listening when the answer is sent', async () => {
+    vi.stubGlobal('SpeechRecognition', FakeRecognition)
+    const fetchMock = mockInterviewApi()
+    const user = await startInterview('behavioral')
+    await screen.findByLabelText('Your Answer')
+
+    await user.click(screen.getByRole('button', { name: 'Speak' }))
+    FakeRecognition.last!.say(['I led the migration', true])
+    await user.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(FakeRecognition.last!.stopped).toBe(true)
+    await screen.findByText('Behavioral question 2')
+    const call = fetchMock.mock.calls.find(([url]) => String(url).endsWith('/answers'))
+    expect(JSON.parse(String(call?.[1]?.body)).answer).toBe('I led the migration')
+  })
+
+  it('explains when the microphone is blocked', async () => {
+    vi.stubGlobal('SpeechRecognition', FakeRecognition)
+    mockInterviewApi()
+    const user = await startInterview('behavioral')
+    await screen.findByLabelText('Your Answer')
+
+    await user.click(screen.getByRole('button', { name: 'Speak' }))
+    act(() => {
+      FakeRecognition.last!.onerror?.({ error: 'not-allowed' })
+      FakeRecognition.last!.onend?.()
+    })
+    expect(screen.getByRole('alert')).toHaveTextContent('Microphone access was blocked')
+    expect(screen.getByRole('button', { name: 'Speak' })).toBeEnabled() // can try again
+  })
+
+  it('is off where the browser has no speech recognition', async () => {
+    mockInterviewApi()
+    await startInterview('behavioral')
+    await screen.findByLabelText('Your Answer')
+
+    const speak = screen.getByRole('button', { name: 'Speak' })
+    expect(speak).toBeDisabled()
+    expect(speak).toHaveAttribute('title', expect.stringContaining("isn't supported in this browser"))
+  })
+
+  it('is not offered for code answers', async () => {
+    vi.stubGlobal('SpeechRecognition', FakeRecognition)
+    mockInterviewApi()
+    const user = await startInterview('technical')
+    await screen.findByText('Technical question 1')
+    expect(screen.getByRole('button', { name: 'Speak' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Code' }))
+    expect(screen.queryByRole('button', { name: 'Speak' })).not.toBeInTheDocument()
   })
 })

@@ -9,6 +9,7 @@ import { Icon } from '../../icons'
 import type { StoredInterviewAnswer } from './sessionState'
 import InterviewFeedback from './InterviewFeedback'
 import InterviewProgress from './InterviewProgress'
+import { useSpeechToText } from './useSpeechToText'
 
 interface InterviewSessionProps {
   mode: InterviewMode
@@ -57,6 +58,17 @@ export default function InterviewSession({
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' })
   }, [feedback, questionIndex, submitting])
+
+  // Answering by voice: the browser's speech recognition types into the answer.
+  const speech = useSpeechToText(onAnswerChange)
+  const { stop } = speech
+  // A new question or switching to a code answer ends the dictation.
+  useEffect(() => stop(), [questionIndex, isCode]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function send() {
+    stop()
+    onSubmit()
+  }
 
   return (
     <section className="interview-session-layout" aria-label="Interview session">
@@ -159,16 +171,44 @@ export default function InterviewSession({
             </div>
 
             {error && <p className="interview-error" role="alert">{error}</p>}
+            {speech.error && <p className="interview-error" role="alert">{speech.error}</p>}
 
             <div className="interview-actions">
+              {!isCode &&
+                (speech.listening ? (
+                  <button type="button" className="interview-mic listening" onClick={speech.stop}>
+                    <Icon name="stop" size={18} />
+                    Stop
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="interview-mic"
+                    disabled={submitting || !speech.supported}
+                    title={
+                      speech.supported
+                        ? "Answer by voice. Uses your browser's speech recognition (Chrome sends the audio to Google)."
+                        : "Voice input isn't supported in this browser. Try Chrome, Edge or Safari."
+                    }
+                    onClick={() => speech.start(answer)}
+                  >
+                    <Icon name="mic" size={18} />
+                    Speak
+                  </button>
+                ))}
               <button
                 type="button"
                 className="interview-primary-button"
-                onClick={onSubmit}
+                onClick={send}
                 disabled={submitting || answer.trim().length === 0}
               >
                 {submitting ? 'Evaluating...' : 'Send'}
               </button>
+              {speech.listening && (
+                <span className="interview-listening" role="status">
+                  <span aria-hidden="true" /> Listening…
+                </span>
+              )}
             </div>
           </>
         )}

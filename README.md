@@ -124,6 +124,12 @@ and title. If none match, the interview can't start until the input is changed. 
 mock mode only the three canned jobs exist, e.g. "Example Company" / "Software Engineer
 Intern".) An interview started from a job's page skips the lookup.
 
+Answers can also be spoken: **Speak** starts the browser's own speech recognition (Web
+Speech API: Chrome, Edge and Safari; not Firefox, where the button is disabled), and
+the words appear in the answer box as they're said, after anything already typed.
+**Stop**, **Send**, a new question or switching to a code answer ends it. Chrome sends
+the audio to Google for recognition; nothing goes through our backend.
+
 ## Project structure
 
 ```
@@ -238,8 +244,8 @@ drift apart.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 159 tests
-cd frontend && npm test                 # 98 tests
+cd backend && .venv/bin/pytest          # 161 tests
+cd frontend && npm test                 # 105 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`

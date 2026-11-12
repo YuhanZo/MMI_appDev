@@ -212,9 +212,62 @@
 }
 
 /* Buttons */
+.interview-mic {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: var(--aivana-touch-preferred);
+  padding: 0 var(--aivana-space-4);
+  border: 1px solid var(--aivana-color-border-control);
+  border-radius: var(--aivana-radius-md);
+  background: var(--aivana-color-surface-card);
+  color: var(--aivana-color-text-primary);
+  font-weight: 600;
+}
+
+.interview-mic:disabled {
+  opacity: 0.5;
+}
+
+.interview-mic.listening {
+  border-color: var(--aivana-status-danger-border);
+  background: var(--aivana-status-danger-bg);
+  color: var(--aivana-status-danger-text);
+}
+
+.interview-listening {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--aivana-space-2);
+  color: var(--aivana-status-danger-text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.interview-listening > span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: interview-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes interview-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .interview-listening > span {
+    animation: none;
+  }
+}
+
 .interview-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--aivana-space-3);
   margin-top: var(--aivana-space-6);
 }
