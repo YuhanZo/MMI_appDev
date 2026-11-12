@@ -172,7 +172,7 @@ SQLite.
         ├── main.tsx           React entry
         ├── App.tsx            shell: top bar, account menu, sidebar, Home, and which
         │                      view is showing
-        ├── features/jobs      job search filter chips, result cards, fit panel
+        ├── features/jobs      job description box + filter chips, result cards, fit panel
         ├── features/interview setup, five-question session, feedback,
         │                      completion and summary components
         ├── features/profile   editable profile page and resume upload, saved in the browser
@@ -225,7 +225,7 @@ drift apart.
 
 ```bash
 cd backend && .venv/bin/pytest          # 128 tests
-cd frontend && npm test                 # 84 tests
+cd frontend && npm test                 # 83 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`
@@ -360,6 +360,11 @@ Set in `backend/.env`:
 | --- | --- |
 | `JOB_API_MODE` | `mock` (default): canned jobs, no key needed. `jsearch`: real listings. |
 | `JSEARCH_API_KEY` | Key from https://www.openwebninja.com/api/jsearch (free tier: 200 requests/month) |
+
+The Job Search page has one free-text box, "Describe a job you want" (up to 200
+characters), sent as the request's single job function; JSearch takes natural
+language, so a description like "remote backend internship with Python" works as is.
+The API still accepts up to five job functions.
 
 `backend/app/job_api.py` sends one request per job function (merging the results),
 with location, job types, experience and remote-only as JSearch parameters. It

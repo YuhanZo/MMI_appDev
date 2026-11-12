@@ -5,6 +5,7 @@ export type ExperienceLevel = 'intern' | 'entry' | 'mid' | 'senior' | 'lead' | '
 export type JobType = 'full_time' | 'part_time' | 'contract' | 'internship'
 
 export const MAX_JOB_FUNCTIONS = 5 // each one is a separate JSearch request
+export const MAX_JOB_DESCRIPTION = 200 // characters in the Job Search description box
 
 // An empty list means "any" for that filter.
 export interface JobSearchRequest {

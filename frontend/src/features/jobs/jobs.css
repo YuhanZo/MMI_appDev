@@ -101,41 +101,6 @@
   accent-color: var(--aivana-color-accent-teal);
 }
 
-.chip-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--aivana-space-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.chip-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--aivana-space-1);
-  padding: var(--aivana-space-1) var(--aivana-space-1) var(--aivana-space-1) var(--aivana-space-3);
-  border-radius: var(--aivana-radius-sm);
-  background: color-mix(in srgb, var(--aivana-color-accent-teal) 18%, var(--aivana-color-surface-card));
-}
-
-.chip-tag button {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  padding: 0;
-  border: 0;
-  border-radius: var(--aivana-radius-sm);
-  background: transparent;
-  color: var(--aivana-color-text-secondary);
-  font-size: 16px;
-}
-
-.chip-tag button:hover {
-  color: var(--aivana-color-text-primary);
-}
-
 .chip-input {
   box-sizing: border-box;
   width: 100%;
@@ -254,4 +219,42 @@
   margin-bottom: var(--aivana-space-4);
   padding-bottom: var(--aivana-space-4);
   border-bottom: 1px solid var(--aivana-color-border-hairline);
+}
+
+/* Free-text job description: the search text */
+.job-describe {
+  display: flex;
+  align-items: center;
+  gap: var(--aivana-space-2);
+  margin-bottom: var(--aivana-space-3);
+  padding: 0 var(--aivana-space-4);
+  border: 1px solid transparent;
+  border-radius: var(--aivana-radius-lg);
+  background:
+    linear-gradient(var(--aivana-color-surface-field), var(--aivana-color-surface-field)) padding-box,
+    linear-gradient(90deg, #c8ee6a, var(--aivana-color-accent-teal)) border-box;
+  color: var(--aivana-color-text-secondary);
+}
+
+.job-describe:focus-within {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--aivana-color-accent-teal) 25%, transparent);
+}
+
+.job-describe input {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  border: 0;
+  background: none;
+  color: var(--aivana-color-text-primary);
+  font: inherit;
+  font-size: 15px;
+}
+
+.job-describe input:focus {
+  outline: none;
+}
+
+.job-describe input::placeholder {
+  color: var(--aivana-color-text-placeholder);
 }

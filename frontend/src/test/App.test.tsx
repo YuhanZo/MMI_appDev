@@ -49,12 +49,10 @@ async function openFilter(user: ReturnType<typeof userEvent.setup>, heading: str
   return screen.getByRole('dialog', { name: heading })
 }
 
-/** Nothing is searched until a job function is chosen and Search is pressed. */
-async function searchJobs(user: ReturnType<typeof userEvent.setup>, jobFunction = 'Software Engineer Intern') {
+/** Nothing is searched until a job is described and Search is pressed. */
+async function searchJobs(user: ReturnType<typeof userEvent.setup>, description = 'Software Engineer Intern') {
   await openJobSearch(user)
-  const dialog = await openFilter(user, 'Job Function')
-  await user.type(within(dialog).getByLabelText('Enter a job function'), `${jobFunction}{Enter}`)
-  await user.click(within(dialog).getByRole('button', { name: 'Confirm' }))
+  await user.type(screen.getByLabelText('Describe a job you want'), description)
   await user.click(screen.getByRole('button', { name: 'Search' }))
 }
 
@@ -545,7 +543,7 @@ describe('App', () => {
     localStorage.clear()
   })
 
-  it("doesn't search until a job function is chosen and Search is pressed", async () => {
+  it("doesn't search until a job is described, then searches with Search or Enter", async () => {
     const fetchMock = mockApi()
     const user = userEvent.setup()
     render(<App />)
@@ -553,29 +551,25 @@ describe('App', () => {
 
     const search = screen.getByRole('button', { name: 'Search' })
     expect(search).toBeDisabled()
-    expect(search).toHaveAttribute('title', 'Add a job function first')
-    expect(screen.getByText('Choose your filters, then press Search.')).toBeInTheDocument()
+    expect(search).toHaveAttribute('title', 'Describe a job first')
+    await user.type(screen.getByLabelText('Describe a job you want'), '   ')
+    expect(search).toBeDisabled() // blank text isn't a search
 
-    const dialog = await openFilter(user, 'Job Function')
-    await user.type(within(dialog).getByLabelText('Enter a job function'), 'Backend Engineer{Enter}')
-    await user.click(within(dialog).getByRole('button', { name: 'Confirm' }))
-    expect(searchBodies(fetchMock)).toHaveLength(0) // confirming a filter doesn't search
-
-    await user.click(screen.getByRole('button', { name: 'Search' }))
+    await user.clear(screen.getByLabelText('Describe a job you want'))
+    await user.type(screen.getByLabelText('Describe a job you want'), '  remote backend internship with Python {Enter}')
     await waitFor(() => expect(searchBodies(fetchMock)).toHaveLength(1))
+    expect(searchBodies(fetchMock)[0].job_functions).toEqual(['remote backend internship with Python'])
   })
 
-  it('sends the filters chosen in each chip when Search is pressed', async () => {
+  it('sends the filters chosen in each chip with the description', async () => {
     const fetchMock = mockApi()
     const user = userEvent.setup()
     render(<App />)
     await openJobSearch(user)
 
-    let dialog = await openFilter(user, 'Job Function')
-    await user.type(within(dialog).getByLabelText('Enter a job function'), 'Software Engineer Intern{Enter}')
-    await user.click(within(dialog).getByRole('button', { name: 'Confirm' }))
+    await user.type(screen.getByLabelText('Describe a job you want'), 'Software Engineer Intern')
 
-    dialog = await openFilter(user, 'Experience Level')
+    let dialog = await openFilter(user, 'Experience Level')
     await user.click(within(dialog).getByLabelText('Intern/New Grad'))
     await user.click(within(dialog).getByLabelText('Entry Level'))
     await user.click(within(dialog).getByRole('button', { name: 'Confirm' }))
@@ -584,6 +578,7 @@ describe('App', () => {
     await user.click(within(dialog).getByLabelText('Hybrid'))
     await user.click(within(dialog).getByLabelText('Onsite'))
     await user.click(within(dialog).getByRole('button', { name: 'Confirm' }))
+    expect(searchBodies(fetchMock)).toHaveLength(0) // confirming a filter doesn't search
 
     await user.click(screen.getByRole('button', { name: 'Search' }))
     await waitFor(() => expect(searchBodies(fetchMock)).toHaveLength(1))
@@ -597,30 +592,6 @@ describe('App', () => {
       'title',
       'Intern/New Grad, Entry Level',
     )
-  })
-
-  it('adds and removes job functions', async () => {
-    const fetchMock = mockApi()
-    const user = userEvent.setup()
-    render(<App />)
-    await openJobSearch(user)
-
-    let dialog = await openFilter(user, 'Job Function')
-    await user.type(within(dialog).getByLabelText('Enter a job function'), 'Backend Engineer{Enter}')
-    await user.type(within(dialog).getByLabelText('Enter a job function'), 'Python Engineer') // added on Confirm
-    await user.click(within(dialog).getByRole('button', { name: 'Confirm' }))
-    expect(screen.getByRole('button', { name: 'Job Function: Backend Engineer (+1)' })).toBeInTheDocument()
-
-    await user.click(screen.getByRole('button', { name: 'Search' }))
-    await waitFor(() => expect(searchBodies(fetchMock)).toHaveLength(1))
-    expect(searchBodies(fetchMock)[0].job_functions).toEqual(['Backend Engineer', 'Python Engineer'])
-
-    // Removing them all leaves nothing to search for.
-    dialog = await openFilter(user, 'Job Function')
-    await user.click(within(dialog).getByRole('button', { name: 'Remove Backend Engineer' }))
-    await user.click(within(dialog).getByRole('button', { name: 'Remove Python Engineer' }))
-    await user.click(within(dialog).getByRole('button', { name: 'Confirm' }))
-    expect(screen.getByRole('button', { name: 'Search' })).toBeDisabled()
   })
 
   it('drops unconfirmed changes when the popover is closed with Escape', async () => {

@@ -1,7 +1,7 @@
 import { Icon } from '../../icons'
-import { type ExperienceLevel, type Job, type JobType, MAX_JOB_FUNCTIONS, type WorkModel } from '../../types'
+import { type ExperienceLevel, type Job, type JobType, MAX_JOB_DESCRIPTION, type WorkModel } from '../../types'
 import CompanyLogo from './CompanyLogo'
-import FilterChip, { CheckboxList, TagInput } from './FilterChip'
+import FilterChip, { CheckboxList } from './FilterChip'
 import FitPanel from './FitPanel'
 import './jobs.css'
 import { useJobSearch } from './useJobSearch'
@@ -36,15 +36,34 @@ export default function JobSearchView({ onPracticeInterview }: { onPracticeInter
   const js = useJobSearch()
   const f = js.filters
 
-  // Filter changes only update the filters; the Search button runs the search.
+  // The description is the search text; the chips narrow it down. Nothing is searched
+  // until Search (or Enter in the description) is pressed.
   return (
     <>
       <div className="page-head">
         <h1>Job Search</h1>
-        <p className="page-sub">Find openings for a role, then see how well your profile fits each one.</p>
       </div>
 
-      <div className="chip-row" role="search" aria-label="Job filters">
+      <form
+        className="job-describe"
+        role="search"
+        onSubmit={(e) => {
+          e.preventDefault()
+          void js.search()
+        }}
+      >
+        <Icon name="search" size={20} />
+        <input
+          aria-label="Describe a job you want"
+          placeholder="Describe a job you want"
+          value={js.description}
+          maxLength={MAX_JOB_DESCRIPTION}
+          disabled={js.searching}
+          onChange={(e) => js.setDescription(e.target.value)}
+        />
+      </form>
+
+      <div className="chip-row" aria-label="Job filters">
         <FilterChip
           heading="Location"
           value={f.location}
@@ -63,23 +82,6 @@ export default function JobSearchView({ onPracticeInterview }: { onPracticeInter
                 onChange={(e) => setDraft(e.target.value)}
               />
             </span>
-          )}
-        </FilterChip>
-
-        <FilterChip
-          heading="Job Function"
-          value={f.job_functions}
-          labels={f.job_functions}
-          disabled={js.searching}
-          onConfirm={(v) => js.applyFilter('job_functions', v)}
-        >
-          {(draft, setDraft) => (
-            <TagInput
-              tags={draft}
-              max={MAX_JOB_FUNCTIONS}
-              placeholder="Enter a job function"
-              onChange={setDraft}
-            />
           )}
         </FilterChip>
 
@@ -117,7 +119,7 @@ export default function JobSearchView({ onPracticeInterview }: { onPracticeInter
           type="button"
           className="btn-filled"
           disabled={!js.canSearch || js.searching}
-          title={js.canSearch ? undefined : 'Add a job function first'}
+          title={js.canSearch ? undefined : 'Describe a job first'}
           onClick={() => void js.search()}
         >
           <Icon name="search" size={18} />
@@ -133,10 +135,8 @@ export default function JobSearchView({ onPracticeInterview }: { onPracticeInter
 
       {js.searching ? (
         <p className="empty">Searching…</p>
-      ) : !js.searched ? (
-        !js.searchError && <p className="empty">Choose your filters, then press Search.</p>
-      ) : js.jobs.length === 0 ? (
-        <p className="empty">No jobs matched these filters. Try another job function, fewer filters, or another location.</p>
+      ) : !js.searched ? null : js.jobs.length === 0 ? (
+        <p className="empty">No jobs matched. Try describing the job differently, fewer filters, or another location.</p>
       ) : (
         <>
           <p className="result-count">

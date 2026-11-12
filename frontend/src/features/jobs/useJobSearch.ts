@@ -30,8 +30,14 @@ export function useJobSearch() {
     setFilters((prev) => ({ ...prev, [key]: value }))
   }
 
-  // The backend needs at least one job function to search.
-  const canSearch = filters.job_functions.length > 0
+  // The free-text description is sent as the search text (the request's single job
+  // function); JSearch takes natural language, so it's passed on as written.
+  const description = filters.job_functions[0] ?? ''
+  function setDescription(text: string) {
+    setFilters((prev) => ({ ...prev, job_functions: text ? [text] : [] }))
+  }
+
+  const canSearch = description.trim() !== ''
 
   const [jobs, setJobs] = useState<Job[]>([])
   const [searched, setSearched] = useState(false)
@@ -128,6 +134,7 @@ export function useJobSearch() {
   }
 
   async function search(request: JobSearchRequest = filters) {
+    request = { ...request, job_functions: request.job_functions.map((f) => f.trim()).filter(Boolean) }
     if (request.job_functions.length === 0) return
     pendingKey.current = null
     queued.current = null
@@ -155,6 +162,8 @@ export function useJobSearch() {
   return {
     filters,
     applyFilter,
+    description,
+    setDescription,
     canSearch,
     jobs,
     searched,
