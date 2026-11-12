@@ -445,6 +445,23 @@ from the saved SQLite turns. A successful response is cached in the session.
 
 ---
 
+## 11b. InterviewStats
+
+Returned by `GET /api/interview/stats?mode=behavioral&since=2026-11-09T05:00:00.000Z`:
+interviews of that mode with all five questions answered since `since`, and ever.
+
+```json
+{ "mode": "behavioral", "completed": 3, "total": 12 }
+```
+
+| Field | Type |
+| --- | --- |
+| `mode` | `behavioral` \| `technical` |
+| `completed` | integer (since `since`) |
+| `total` | integer (ever) |
+
+---
+
 ## 12. BenchmarkResult
 
 Returned by `POST /api/benchmark/chat` (request: `{"prompt": "Correct grammar: I are happy."}`,

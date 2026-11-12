@@ -652,3 +652,34 @@ def test_interview_summaries_are_available_for_each_mode(client):
 def test_summary_rejects_an_invalid_mode(client):
     res = client.get("/api/interview/summary?mode=invalid")
     assert res.status_code == 422
+
+
+def stats(client, mode, since):
+    return client.get("/api/interview/stats", params={"mode": mode, "since": since})
+
+
+def test_finishing_the_fifth_answer_marks_the_session_completed(client, session, monkeypatch):
+    complete_generated_session(client, monkeypatch)
+    assert session.execute(text("SELECT status FROM interview_sessions")).scalar_one() == "completed"
+
+
+def test_stats_count_completed_interviews_of_the_mode_since_the_given_time(client, session, monkeypatch):
+    complete_generated_session(client, monkeypatch)  # behavioral, completed now
+    create_generated_session(client, monkeypatch)  # behavioral, not finished
+
+    res = stats(client, "behavioral", "2020-01-01T00:00:00-05:00")
+    assert res.status_code == 200
+    assert res.json() == {"mode": "behavioral", "completed": 1, "total": 1}
+    assert stats(client, "technical", "2020-01-01T00:00:00Z").json()["completed"] == 0
+    future = stats(client, "behavioral", "2999-01-01T00:00:00Z").json()
+    assert (future["completed"], future["total"]) == (0, 1)  # not this week, but still counted ever
+
+
+def test_stats_treat_a_time_without_a_zone_as_utc(client, monkeypatch):
+    complete_generated_session(client, monkeypatch)
+    assert stats(client, "behavioral", "2020-01-01T00:00:00").json()["completed"] == 1
+
+
+def test_stats_reject_a_bad_mode_or_time(client):
+    assert stats(client, "general", "2020-01-01T00:00:00Z").status_code == 422
+    assert stats(client, "behavioral", "last week").status_code == 422

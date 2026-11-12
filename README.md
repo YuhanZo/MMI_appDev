@@ -122,7 +122,10 @@ company and title are looked up first (`/api/jobs/search`, so JSearch in
 with what was typed are listed, and the interview uses the chosen posting's own company
 and title. If none match, the interview can't start until the input is changed. (In
 mock mode only the three canned jobs exist, e.g. "Example Company" / "Software Engineer
-Intern".) An interview started from a job's page skips the lookup.
+Intern".) An interview started from a job's page skips the lookup. The setup page also shows how many
+interviews of that mode were completed this week (all five questions answered,
+counted from Monday 00:00 local time) against a goal of 5 per week, and how many were
+completed in total ("Solved").
 
 Answers can also be spoken: **Speak** starts the browser's own speech recognition (Web
 Speech API: Chrome, Edge and Safari; not Firefox, where the button is disabled), and
@@ -231,6 +234,7 @@ drift apart.
 | POST | `/api/interview/sessions` | creates a persisted session and returns exactly five distinct Aivana-generated questions for the supplied company, position, and mode; optional `resume_text` enables resume-aware generation and stores an immutable session snapshot; requires `AIVANA_MODE=live` |
 | POST | `/api/interview/sessions/{session_id}/answers` | evaluates the current answer with Aivana, persists its 0–10 score and structured feedback, then advances the persisted question index; resume context is included only for resume-related questions |
 | POST | `/api/interview/sessions/{session_id}/summary` | generates and caches one concise Aivana summary after all five answers; scores and question results come from SQLite, with optional resume-based feedback for resume-aware sessions |
+| GET | `/api/interview/stats?mode=behavioral\|technical&since=<ISO time>` | `InterviewStats {mode, completed, total}`: interviews of that mode with all five questions answered since `since`, and ever (the setup page sends the start of the user's week, Monday 00:00 local time) |
 | POST | `/api/profile/resume` | multipart `file` (PDF, Word .docx or .txt, up to 5 MB) → `ResumeUploadResult {filename, text, truncated}`: the resume's plain text, at most 15,000 characters; the upload endpoint does not retain the file or text (starting a resume-aware interview separately stores a session snapshot); `413` over 5 MB, `422 {detail: {message, code: bad_resume}}` for an unreadable or unsupported file |
 | GET | `/api/interview/questions?mode=behavioral\|technical` | five prepared questions for the selected mode |
 | POST | `/api/interview/feedback` | `InterviewFeedback` (mocked) |
@@ -244,8 +248,8 @@ drift apart.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 161 tests
-cd frontend && npm test                 # 105 tests
+cd backend && .venv/bin/pytest          # 165 tests
+cd frontend && npm test                 # 108 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`

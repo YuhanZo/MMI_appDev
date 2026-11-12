@@ -200,6 +200,12 @@ class InterviewSessionCreate(BaseModel):
     resume_text: str | None = Field(default=None, max_length=MAX_RESUME_CHARS)
 
 
+class InterviewStats(BaseModel):
+    mode: InterviewMode
+    completed: int  # interviews with all five questions answered since the requested time
+    total: int  # ... ever
+
+
 class InterviewSessionCreated(BaseModel):
     session_id: str
     company: str

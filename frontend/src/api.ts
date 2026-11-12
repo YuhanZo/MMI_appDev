@@ -12,6 +12,7 @@ import type {
   InterviewTurnEvaluated,
   InterviewMode,
   InterviewQuestion,
+  InterviewStats,
   InterviewSummary,
   Job,
   JobSearchRequest,
@@ -105,6 +106,11 @@ export const getFeedback = (answer: InterviewAnswer) =>
 
 export const getDetailedFeedback = (answer: DetailedFeedbackRequest) =>
   post<DetailedInterviewFeedback>('/api/interview/detailed-feedback', answer)
+
+export const getInterviewStats = (mode: InterviewMode, since: Date) =>
+  request<InterviewStats>(
+    `/api/interview/stats?mode=${encodeURIComponent(mode)}&since=${encodeURIComponent(since.toISOString())}`,
+  )
 
 export const getInterviewSummary = (sessionId: string) =>
   post<InterviewSummary>(`/api/interview/sessions/${encodeURIComponent(sessionId)}/summary`, undefined)

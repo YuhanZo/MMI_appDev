@@ -17,6 +17,7 @@ import {
   type InterviewSessionState,
 } from './sessionState'
 import './interview.css'
+import { startOfWeek, WEEKLY_GOAL } from './weeklyGoal'
 
 export interface InterviewLaunchRequest {
   nonce: number
@@ -49,6 +50,7 @@ export default function InterviewWorkspace({
   const [submitting, setSubmitting] = useState(false)
   const lastLaunchNonce = useRef<number | null>(null)
   const hasResume = loadCareerProfile().resumeText.trim().length > 0
+  const [stats, setStats] = useState<{ week: number; total: number } | null>(null)
 
   const beginInterview = useCallback(async (company: string, position: string) => {
     setSummary(null)
@@ -99,6 +101,19 @@ export default function InterviewWorkspace({
     setQuestions([])
     setSession(createSetupResetState(mode))
   }, [mode, resetRequest])
+
+  // Completed interviews (this week and ever): loaded on opening, and again when one finishes.
+  const finished = session.stage === 'complete'
+  useEffect(() => {
+    let current = true
+    api
+      .getInterviewStats(mode, startOfWeek())
+      .then((s) => current && setStats({ week: s.completed, total: s.total }))
+      .catch(() => current && setStats(null))
+    return () => {
+      current = false
+    }
+  }, [mode, finished])
 
   const question = questions[session.currentQuestion]
   const currentAnswer = question ? session.answers[question.id]?.value ?? '' : ''
@@ -223,7 +238,38 @@ export default function InterviewWorkspace({
               {back.label}
             </button>
           )}
-          <h1>{modeLabel} Interview</h1>
+          {session.stage === 'setup' ? (
+            <div className={`interview-hero ${mode}`}>
+              <div>
+                <h1>
+                  {modeLabel}
+                  <br />
+                  Interview<span aria-hidden="true">.</span>
+                </h1>
+                <p>Practice five questions for a real opening, with feedback after each answer.</p>
+              </div>
+              <div className="interview-stats">
+                <div className="interview-stat" aria-label="Completed this week">
+                  <p>
+                    <Icon name="check" size={16} />
+                    This week
+                  </p>
+                  <strong className={stats && stats.week >= WEEKLY_GOAL ? 'met' : undefined}>
+                    {stats ? `${stats.week}/${WEEKLY_GOAL}` : '—'}
+                  </strong>
+                </div>
+                <div className="interview-stat" aria-label="Solved in total">
+                  <p>
+                    <Icon name="sparkle" size={16} />
+                    Solved
+                  </p>
+                  <strong>{stats ? stats.total : '—'}</strong>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <h1>{modeLabel} Interview</h1>
+          )}
         </div>
         <div className="interview-header-meta">
           {session.stage !== 'setup' && (

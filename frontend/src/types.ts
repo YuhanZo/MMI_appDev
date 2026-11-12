@@ -145,6 +145,12 @@ export interface CreateInterviewSessionRequest {
   resume_text?: string
 }
 
+export interface InterviewStats {
+  mode: InterviewMode
+  completed: number // interviews with all five questions answered since the requested time
+  total: number // ... ever
+}
+
 export interface CreatedInterviewSession {
   session_id: string
   company: string

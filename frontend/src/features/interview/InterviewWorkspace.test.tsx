@@ -1,9 +1,10 @@
-import { act, render, screen, within } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MOCK_CAREER_PROFILE, PROFILE_STORAGE_KEY } from '../profile/profileStorage'
 import InterviewSummary from './InterviewSummary'
 import InterviewWorkspace from './InterviewWorkspace'
+import { startOfWeek } from './weeklyGoal'
 
 const BEHAVIORAL_QUESTIONS = Array.from({ length: 5 }, (_, index) => ({
   id: `behavioral-${index + 1}`,
@@ -50,10 +51,22 @@ const ROLE = { id: 'role-1', title: 'Engineer', company: 'Aivana', location: 'Re
 const OTHER_COMPANY = { ...ROLE, id: 'role-2', company: 'Other Company' }
 
 function mockInterviewApi(
-  options: { failFeedback?: boolean; failSession?: boolean; slowFeedback?: boolean; roles?: unknown[] | Error } = {},
+  options: {
+    failFeedback?: boolean
+    failSession?: boolean
+    slowFeedback?: boolean
+    roles?: unknown[] | Error
+    weekCounts?: number[] // successive "this week" answers to the stats request
+    total?: number
+  } = {},
 ) {
   let sessionNumber = 0
+  const weekCounts = [...(options.weekCounts ?? [2])]
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+    if (url.startsWith('/api/interview/stats?')) {
+      const completed = weekCounts.length > 1 ? weekCounts.shift()! : weekCounts[0]
+      return jsonResponse({ mode: new URL(url, 'http://x').searchParams.get('mode'), completed, total: options.total ?? 7 })
+    }
     if (url === '/api/jobs/search') {
       if (options.roles instanceof Error) return jsonResponse({}, false)
       return jsonResponse(options.roles ?? [ROLE, OTHER_COMPANY])
@@ -131,7 +144,9 @@ describe('InterviewWorkspace', () => {
     expect(screen.queryByRole('button', { name: 'Technical Interview' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Find this role' })).toBeDisabled()
     expect(screen.getByText('No Resume Uploaded')).toBeInTheDocument()
-    expect(fetchMock).not.toHaveBeenCalled()
+    // Only this week's count is loaded; nothing else until the role is looked up.
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(String(fetchMock.mock.calls[0][0])).toMatch(/^\/api\/interview\/stats\?mode=behavioral&since=/)
   })
 
   it('shows current profile resume status and sends resume text only when uploaded', async () => {
@@ -298,6 +313,50 @@ describe('InterviewWorkspace', () => {
     expect(screen.getByLabelText('Company')).toHaveValue('Aivana')
     expect(screen.getByLabelText('Position / Job Title')).toHaveValue('Engineer')
     expect(screen.getByRole('region', { name: 'Behavioral Interview Setup' })).toBeInTheDocument()
+  })
+
+  it("shows this week's completed interviews against the goal, and counts a finished one", async () => {
+    const fetchMock = mockInterviewApi({ weekCounts: [2, 3] })
+    const user = userEvent.setup()
+    render(<InterviewWorkspace mode="behavioral" onTryOtherMode={vi.fn()} />)
+
+    const stat = screen.getByLabelText('Completed this week')
+    await waitFor(() => expect(stat).toHaveTextContent('This week2/5'))
+    expect(screen.getByLabelText('Solved in total')).toHaveTextContent('Solved7')
+    const since = new URL(String(fetchMock.mock.calls[0][0]), 'http://x').searchParams.get('since')!
+    expect(new Date(since).getTime()).toBe(startOfWeek().getTime())
+
+    await user.type(screen.getByLabelText('Company'), 'Aivana')
+    await user.type(screen.getByLabelText('Position / Job Title'), 'Engineer')
+    await startForFoundRole(user)
+    for (let index = 1; index <= 5; index += 1) {
+      await user.type(await screen.findByLabelText('Your Answer'), `Answer ${index}`)
+      await user.click(screen.getByRole('button', { name: 'Send' }))
+    }
+    await screen.findByRole('heading', { name: 'Interview Complete' })
+    await waitFor(() => expect(fetchMock.mock.calls.filter(([url]) => String(url).startsWith('/api/interview/stats'))).toHaveLength(2))
+
+    await user.click(screen.getByRole('button', { name: 'Back to Interview Setup' }))
+    expect(screen.getByLabelText('Completed this week')).toHaveTextContent('3/5')
+  })
+
+  it('marks the goal as met and shows a dash when the count is unavailable', async () => {
+    mockInterviewApi({ weekCounts: [5] })
+    const { unmount } = render(<InterviewWorkspace mode="technical" onTryOtherMode={vi.fn()} />)
+    await waitFor(() => expect(screen.getByText('5/5')).toHaveClass('met'))
+    unmount()
+
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse({}, false)))
+    render(<InterviewWorkspace mode="technical" onTryOtherMode={vi.fn()} />)
+    await waitFor(() => expect(screen.getByLabelText('Completed this week')).toHaveTextContent('—'))
+    expect(screen.getByLabelText('Solved in total')).toHaveTextContent('—')
+  })
+
+  it('starts the week on Monday in local time', () => {
+    const wednesday = new Date(2026, 10, 11, 15, 30) // Wed 11 Nov 2026, 15:30
+    expect(startOfWeek(wednesday)).toEqual(new Date(2026, 10, 9, 0, 0))
+    const sunday = new Date(2026, 10, 15, 23, 59)
+    expect(startOfWeek(sunday)).toEqual(new Date(2026, 10, 9, 0, 0))
   })
 
   it('lists the open roles found at that company and starts with the chosen one', async () => {

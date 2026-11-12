@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -19,6 +21,7 @@ from app.schemas import (
     InterviewFeedbackDetail,
     InterviewSessionCreate,
     InterviewSessionCreated,
+    InterviewStats,
     InterviewSummary,
     InterviewTurnAnswer,
     InterviewTurnEvaluated,
@@ -33,6 +36,8 @@ RESUME_QUESTION_CATEGORIES = frozenset({"resume", "resume_position", "resume_tec
 
 def _public_question_type(mode: InterviewMode, category: str) -> str:
     return "general" if category == "general" else mode
+
+QUESTIONS_PER_SESSION = 5
 
 
 def _raise_aivana_http_error(error: AivanaError) -> None:
@@ -149,6 +154,8 @@ def submit_session_answer(
     turn.feedback = generated.model_dump()
     turn.score = generated.score
     record.current_question_index = req.question_index + 1
+    if record.current_question_index >= QUESTIONS_PER_SESSION:
+        record.status = "completed"  # updated_at then marks when; the weekly count uses it
     db.commit()
 
     next_turn = db.scalar(
@@ -175,6 +182,26 @@ def submit_session_answer(
     )
 
 
+@router.get("/stats", response_model=InterviewStats)
+def interview_stats(
+    mode: InterviewMode,
+    since: datetime,
+    db: Session = Depends(get_db),
+) -> InterviewStats:
+    """Interviews of this mode completed (all five questions answered): since `since` --
+    the frontend sends the start of the user's week in their own time zone -- and ever."""
+    since_utc = since.astimezone(timezone.utc) if since.tzinfo else since.replace(tzinfo=timezone.utc)
+    finished = list(db.scalars(
+        select(InterviewSessionRecord.updated_at).where(
+            InterviewSessionRecord.mode == mode,
+            InterviewSessionRecord.current_question_index >= QUESTIONS_PER_SESSION,
+        )
+    ))
+    # SQLite gives naive datetimes back; they're stored in UTC.
+    completed = sum(1 for at in finished if (at if at.tzinfo else at.replace(tzinfo=timezone.utc)) >= since_utc)
+    return InterviewStats(mode=mode, completed=completed, total=len(finished))
+
+
 @router.post(
     "/sessions/{session_id}/summary",
     response_model=SessionInterviewSummary,
@@ -198,8 +225,8 @@ def create_session_summary(
         )
     )
     if (
-        len(turns) != 5
-        or record.current_question_index != 5
+        len(turns) != QUESTIONS_PER_SESSION
+        or record.current_question_index != QUESTIONS_PER_SESSION
         or any(turn.answer is None or turn.feedback is None or turn.score is None for turn in turns)
     ):
         raise HTTPException(status_code=409, detail="Interview must be completed before generating a summary")

@@ -7,6 +7,11 @@
   margin-bottom: var(--aivana-space-6);
 }
 
+.interview-page-header > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
 .interview-page-header h1 {
   margin: var(--aivana-space-1) 0 var(--aivana-space-2);
   font-size: clamp(26px, 3vw, 32px);
@@ -82,6 +87,99 @@
   border-radius: var(--aivana-radius-md);
   background: var(--aivana-status-warning-bg);
   color: var(--aivana-status-warning-text);
+}
+
+/* Setup header: big title on the left, this week's count on the right */
+.interview-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--aivana-space-6);
+  padding: var(--aivana-space-6) var(--aivana-space-8);
+  border: 1px solid var(--aivana-color-border-hairline);
+  border-radius: var(--aivana-radius-xl);
+  /* Pastel blobs blended into the card colour: strong on light, faint on dark. */
+  --hero-mix: 75%;
+  --hero-a: #b9a6ff; /* lavender */
+  --hero-b: #ffc7a8; /* peach */
+  --hero-c: #ffc6e4; /* pink */
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--hero-a) var(--hero-mix), transparent), transparent 55%),
+    radial-gradient(circle at 100% 100%, color-mix(in srgb, var(--hero-b) var(--hero-mix), transparent), transparent 55%),
+    radial-gradient(circle at 70% 20%, color-mix(in srgb, var(--hero-c) var(--hero-mix), transparent), transparent 50%),
+    var(--aivana-color-surface-card);
+}
+
+.interview-hero.technical {
+  --hero-a: #a8d8ff; /* sky */
+  --hero-b: #fff1b8; /* cream */
+  --hero-c: #d9c8ff; /* lilac */
+}
+
+:root[data-theme='dark'] .interview-hero {
+  --hero-mix: 22%;
+}
+
+.interview-hero h1 {
+  margin: 0 0 var(--aivana-space-3);
+  font-size: clamp(34px, 5vw, 48px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.interview-hero h1 span {
+  color: var(--aivana-color-accent-violet);
+}
+
+.interview-hero > div > p {
+  max-width: 300px;
+  margin: 0;
+  color: var(--aivana-color-text-secondary);
+  line-height: 1.5;
+}
+
+.interview-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--aivana-space-3);
+}
+
+/* See-through tiles: the hero's gradient shows through a light frosted layer. */
+.interview-stat {
+  min-width: 150px;
+  padding: var(--aivana-space-3) var(--aivana-space-4);
+  border: 1px solid color-mix(in srgb, var(--aivana-color-surface-card) 70%, transparent);
+  border-radius: var(--aivana-radius-lg);
+  background: color-mix(in srgb, var(--aivana-color-surface-card) 35%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+.interview-stat p {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 var(--aivana-space-1);
+  color: var(--aivana-color-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.interview-stat svg {
+  color: var(--aivana-status-success-text);
+}
+
+.interview-stat strong {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.interview-stat strong.met {
+  color: var(--aivana-status-success-text);
 }
 
 .interview-panel {
