@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Icon, type IconName } from '../../icons'
-import type { Job } from '../../types'
+import type { Job, JobSummary } from '../../types'
 import CompanyLogo from './CompanyLogo'
 import FitPanel from './FitPanel'
 import type { JobSearchState } from './useJobSearch'
@@ -37,6 +37,10 @@ export default function JobDetail({
   onPracticeInterview: (job: Job) => void
 }) {
   const [expanded, setExpanded] = useState(false)
+  // A short summary of the posting, usually prefetched right after the search; until it
+  // arrives (or if it can't be made) the description is shown as written.
+  const summaryState = js.summaryOf(job)
+  const summary = typeof summaryState === 'object' ? summaryState : null
   const [shareNote, setShareNote] = useState('')
 
   const workModel = job.work_model ? WORK_MODEL_LABELS[job.work_model] : ''
@@ -134,16 +138,32 @@ export default function JobDetail({
             </section>
           )}
 
-          {job.description && (
-            <section className="job-section" aria-labelledby="job-description-title">
-              <h3 id="job-description-title">Job description</h3>
-              <p className={`job-description${long && !expanded ? ' folded' : ''}`}>{job.description}</p>
-              {long && (
-                <button type="button" className="job-more" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
-                  {expanded ? 'Show less' : 'Show more'}
-                </button>
+          {summary ? (
+            <section className="job-section" aria-labelledby="job-summary-title">
+              <h3 id="job-summary-title">
+                Job summary
+              </h3>
+              <SummaryView summary={summary} />
+              {job.description && (
+                <details className="job-full">
+                  <summary>Show full description</summary>
+                  <p className="job-description">{job.description}</p>
+                </details>
               )}
             </section>
+          ) : (
+            job.description && (
+              <section className="job-section" aria-labelledby="job-description-title">
+                <h3 id="job-description-title">Job description</h3>
+                {summaryState === 'loading' && <p className="job-summary-wait">Summarizing this posting…</p>}
+                <p className={`job-description${long && !expanded ? ' folded' : ''}`}>{job.description}</p>
+                {long && (
+                  <button type="button" className="job-more" aria-expanded={expanded} onClick={() => setExpanded(!expanded)}>
+                    {expanded ? 'Show less' : 'Show more'}
+                  </button>
+                )}
+              </section>
+            )
           )}
 
           {job.benefits && job.benefits.length > 0 && (
@@ -161,5 +181,42 @@ export default function JobDetail({
         <FitPanel js={js} />
       </div>
     </article>
+  )
+}
+
+function SummaryView({ summary }: { summary: JobSummary }) {
+  const lists: { title: string; items: string[] }[] = [
+    { title: "What you'll do", items: summary.duties },
+    { title: 'Must have', items: summary.required },
+    { title: 'Nice to have', items: summary.preferred },
+  ]
+  return (
+    <div className="job-summary">
+      <p className="job-summary-overview">{summary.overview}</p>
+      <dl>
+        {lists
+          .filter((l) => l.items.length > 0)
+          .map((l) => (
+            <div key={l.title}>
+              <dt>{l.title}</dt>
+              <dd>
+                <ul>
+                  {l.items.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </dd>
+            </div>
+          ))}
+        <div>
+          <dt>Work authorization</dt>
+          <dd>{summary.authorization}</dd>
+        </div>
+        <div>
+          <dt>Pay</dt>
+          <dd>{summary.pay}</dd>
+        </div>
+      </dl>
+    </div>
   )
 }

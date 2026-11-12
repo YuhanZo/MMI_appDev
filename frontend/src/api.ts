@@ -15,6 +15,7 @@ import type {
   InterviewSummary,
   Job,
   JobSearchRequest,
+  JobSummary,
   ResumeUploadResult,
   ModelReply,
   Scenario,
@@ -65,6 +66,8 @@ const post = <T>(path: string, body: unknown) =>
 export const health = () => request<{ status: string; database: string }>('/api/health')
 
 export const searchJobs = (req: JobSearchRequest) => post<Job[]>('/api/jobs/search', req)
+
+export const summarizeJob = (job: Job) => post<JobSummary>('/api/jobs/summary', { job })
 
 export const fitAnalysis = (req: FitAnalysisRequest) =>
   post<FitAnalysisResult>('/api/jobs/fit-analysis', req)

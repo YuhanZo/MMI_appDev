@@ -168,6 +168,30 @@ Used for fit analysis and mock interview.
 | `gaps` | string[] |
 | `recommendations` | string[] |
 
+**JobSummary** (`POST /api/jobs/summary`, request `{"job": Job}`): the posting boiled
+down for the job page by the fast baseline model, at most 300 words in all (the backend
+enforces the limits).
+
+```json
+{
+  "overview": "Backend internship building Python services on AWS.",
+  "duties": ["Build and test backend services"],
+  "required": ["Python", "REST APIs"],
+  "preferred": ["AWS experience"],
+  "authorization": "Not mentioned",
+  "pay": "$25–$32 an hour"
+}
+```
+
+| Field | Type |
+| --- | --- |
+| `overview` | string (1-2 sentences) |
+| `duties` | string[] (what you'll do, up to 5) |
+| `required` | string[] (must-haves, up to 5) |
+| `preferred` | string[] (nice-to-haves, up to 3) |
+| `authorization` | string (work authorization / sponsorship as the posting states it, or `"Not mentioned"`) |
+| `pay` | string (pay as the posting states it, or `"Not mentioned"`) |
+
 ---
 
 ## 6. InterviewQuestion

@@ -57,6 +57,16 @@ export interface FitAnalysisRequest {
   user_profile: UserProfile
 }
 
+// The posting itself, boiled down by the fast baseline model (at most 300 words in all).
+export interface JobSummary {
+  overview: string // 1-2 sentences
+  duties: string[] // up to 5
+  required: string[] // up to 5
+  preferred: string[] // up to 3
+  authorization: string // as the posting states it, or "Not mentioned"
+  pay: string // as the posting states it, or "Not mentioned"
+}
+
 export interface FitAnalysisResult {
   summary: string
   strengths: string[]

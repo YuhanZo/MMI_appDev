@@ -80,6 +80,8 @@ function mockApi(overrides: Record<string, unknown> = {}) {
   const routes: Record<string, unknown> = {
     '/api/health': { status: 'ok', database: 'sqlite' },
     '/api/jobs/search': [JOB],
+    // Job page summaries fail by default, so pages show the description as written.
+    '/api/jobs/summary': new HttpReply(502, 'Bad Gateway', { detail: { message: 'no summary', code: 'summary_failed' } }),
     '/api/jobs/fit-analysis': {
       summary: 'Overall fit summary.',
       strengths: ['Strong Python experience'],
@@ -400,6 +402,69 @@ describe('App', () => {
     await backToList(user)
     expect(screen.getByRole('list', { name: 'Job results' })).toBeInTheDocument()
     expect(screen.queryByRole('article')).not.toBeInTheDocument()
+  })
+
+  it('shows the summary of the posting, with the full description folded below', async () => {
+    const jobSummary = {
+      overview: 'Backend internship building Python services.',
+      duties: ['Build APIs', 'Write tests'],
+      required: ['Python'],
+      preferred: [],
+      authorization: 'US citizens or green card holders only',
+      pay: '$30 an hour',
+    }
+    mockApi({ '/api/jobs/summary': jobSummary })
+    const user = userEvent.setup()
+    render(<App />)
+    await searchAndOpen(user)
+
+    const section = await screen.findByRole('region', { name: 'Job summary' })
+    expect(within(section).getByText('Backend internship building Python services.')).toBeInTheDocument()
+    expect(within(section).getByText("What you'll do").nextElementSibling).toHaveTextContent('Build APIsWrite tests')
+    expect(within(section).queryByText('Nice to have')).not.toBeInTheDocument() // empty lists are left out
+    expect(within(section).getByText('Work authorization').nextElementSibling).toHaveTextContent(
+      'US citizens or green card holders only',
+    )
+    expect(within(section).getByText('Pay').nextElementSibling).toHaveTextContent('$30 an hour')
+    expect(screen.queryByRole('heading', { name: 'Job description' })).not.toBeInTheDocument()
+
+    const full = within(section).getByText('Show full description').closest('details')!
+    expect(full).not.toHaveAttribute('open')
+    await user.click(within(section).getByText('Show full description'))
+    expect(within(full).getByText(JOB.description)).toBeVisible()
+  })
+
+  it('summarizes the results one at a time right after the search, before they are opened', async () => {
+    const second = { ...JOB, id: 'job_002', title: 'Data Analyst Intern' }
+    const pending: Array<(v: unknown) => void> = []
+    const fetchMock = mockApi({
+      '/api/jobs/search': [JOB, second],
+      '/api/jobs/summary': () => new Promise((resolve) => pending.push(resolve)),
+    })
+    const summarized = () =>
+      fetchMock.mock.calls.filter(([url]) => url === '/api/jobs/summary').map(([, init]) => JSON.parse(String(init?.body)).job.id)
+    const user = userEvent.setup()
+    render(<App />)
+    await searchJobs(user)
+
+    await waitFor(() => expect(summarized()).toEqual(['job_001'])) // one at a time
+    pending[0]({ overview: 'First.', duties: [], required: [], preferred: [], authorization: 'Not mentioned', pay: 'Not mentioned' })
+    await waitFor(() => expect(summarized()).toEqual(['job_001', 'job_002']))
+
+    await openJob(user) // already summarized: no new request, shown straight away
+    expect(screen.getByRole('region', { name: 'Job summary' })).toHaveTextContent('First.')
+    expect(summarized()).toEqual(['job_001', 'job_002'])
+  })
+
+  it('shows the description as written while the summary is on its way', async () => {
+    mockApi({ '/api/jobs/summary': new Promise(() => {}) })
+    const user = userEvent.setup()
+    render(<App />)
+    await searchAndOpen(user)
+
+    const section = screen.getByRole('region', { name: 'Job description' })
+    expect(within(section).getByText('Summarizing this posting…')).toBeInTheDocument()
+    expect(within(section).getByText(JOB.description)).toBeVisible()
   })
 
   it('leaves out what the posting does not say', async () => {

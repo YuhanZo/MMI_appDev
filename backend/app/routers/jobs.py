@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from app import job_api, mock_data
+from app import job_api, job_summary, mock_data
 from app.aivana import AivanaError
 from app.config import settings
 from app.db import get_db
 from app.fit_analysis import analyze_fit
 from app.models import SearchLog
-from app.schemas import FitAnalysisRequest, FitAnalysisResult, Job, JobSearchRequest
+from app.schemas import FitAnalysisRequest, FitAnalysisResult, Job, JobSearchRequest, JobSummary, JobSummaryRequest
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
@@ -56,3 +56,12 @@ def fit_analysis(req: FitAnalysisRequest) -> FitAnalysisResult:
             status_code=502,
             detail={"message": str(e), "code": e.code, "request_id": e.request_id},
         ) from e
+
+
+@router.post("/summary", response_model=JobSummary)
+def summarize_job(req: JobSummaryRequest) -> JobSummary:
+    """The posting boiled down by the fast baseline model; cached for 24 h per posting."""
+    try:
+        return job_summary.summarize(req.job)
+    except job_summary.SummaryError as e:
+        raise HTTPException(status_code=502, detail={"message": str(e), "code": "summary_failed"}) from e

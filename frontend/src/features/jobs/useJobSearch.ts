@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import * as api from '../../api'
 import { loadCareerProfile, toUserProfile } from '../profile/profileStorage'
-import type { FitAnalysisResult, Job, JobSearchRequest } from '../../types'
+import type { FitAnalysisResult, Job, JobSearchRequest, JobSummary } from '../../types'
 
 // Aivana allows 20 requests a minute and only a few at once (seen as "per-minute
 // request limit reached" and "Too many requests are running at once").
@@ -131,6 +131,8 @@ export function useJobSearch() {
   // Opening a job shows its page and starts (or reuses) its fit analysis.
   function open(job: Job) {
     void analyze(job)
+    // Not summarized yet (e.g. opened before the prefetch got to it): do it now.
+    if (!summaries[summaryKey(job)]) void summarize(job)
   }
 
   // Back to the list. An analysis still running keeps going and is kept for when the
@@ -143,6 +145,38 @@ export function useJobSearch() {
     setFitError('')
     setAnalyzing(false)
     setWaiting(false)
+  }
+
+  // Posting summaries, by job (id + description, so changed content gets a new one).
+  // 'failed' means the page shows the description as written.
+  const [summaries, setSummaries] = useState<Record<string, JobSummary | 'failed'>>({})
+  const summarizing = useRef(new Set<string>())
+  const searchRun = useRef(0)
+
+  function summarize(job: Job): Promise<void> {
+    const key = summaryKey(job)
+    if (summarizing.current.has(key)) return Promise.resolve()
+    summarizing.current.add(key)
+    return api
+      .summarizeJob(job)
+      .then(
+        (summary) => setSummaries((prev) => ({ ...prev, [key]: summary })),
+        () => setSummaries((prev) => ({ ...prev, [key]: 'failed' })),
+      )
+      .finally(() => summarizing.current.delete(key))
+  }
+
+  // Right after a search, summarize the results one at a time (the summary model limits
+  // requests per minute), so most are ready before they're opened. A newer search stops it.
+  async function prefetchSummaries(results: Job[], run: number) {
+    for (const job of results) {
+      if (searchRun.current !== run) return
+      await summarize(job)
+    }
+  }
+
+  function summaryOf(job: Job): JobSummary | 'failed' | 'loading' {
+    return summaries[summaryKey(job)] ?? 'loading'
   }
 
   // Failures aren't cached, so retrying just analyzes the selected job again.
@@ -166,6 +200,8 @@ export function useJobSearch() {
       const results = await api.searchJobs(request)
       setJobs(results)
       setSearched(true)
+      const run = ++searchRun.current
+      void prefetchSummaries(results, run)
     } catch (e) {
       setJobs([])
       setSearchError(`Search failed: ${String(e)}`)
@@ -193,8 +229,13 @@ export function useJobSearch() {
     analyze,
     open,
     close,
+    summaryOf,
     retry,
   }
+}
+
+function summaryKey(job: Job): string {
+  return `${job.id}\n${job.description}`
 }
 
 export type JobSearchState = ReturnType<typeof useJobSearch>

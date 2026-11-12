@@ -1,6 +1,6 @@
 """Placeholder data. Swap for the third-party job API + Aivana MMI later."""
 
-from app.schemas import FitAnalysisResult, InterviewFeedback, InterviewQuestion, Job
+from app.schemas import FitAnalysisResult, JobSummary, InterviewFeedback, InterviewQuestion, Job
 
 JOBS = [
     Job(
@@ -69,4 +69,13 @@ FEEDBACK = InterviewFeedback(
     summary="Overall feedback.",
     strengths=["Clear explanation"],
     improvements=["Add measurable results"],
+)
+
+JOB_SUMMARY = JobSummary(
+    overview="Backend internship building Python services on AWS for a Columbus team.",
+    duties=["Build and test backend services", "Deploy services to AWS"],
+    required=["Python", "REST APIs"],
+    preferred=["AWS experience"],
+    authorization="Not mentioned",
+    pay="$25–$32 an hour",
 )

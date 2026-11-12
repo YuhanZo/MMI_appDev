@@ -136,6 +136,7 @@ also use Aivana and are persisted in SQLite.
 │   │   ├── main.py            app setup, CORS, table creation, /api/health
 │   │   ├── aivana.py          Aivana MMI client: timeout, retries, typed errors
 │   │   ├── fit_analysis.py    prompt + format check for AI fit analysis
+│   │   ├── job_summary.py     short structured summary of a posting (baseline model, cached)
 │   │   ├── interview_ai.py    standard and resume-aware five-question generation
 │   │   ├── resume.py          text from an uploaded resume (PDF, .docx, .txt)
 │   │   ├── baseline.py        general model for the Benchmark (OpenAI-compatible chat API)
@@ -157,6 +158,7 @@ also use Aivana and are persisted in SQLite.
 │       ├── conftest.py        throwaway SQLite per test, test client, no real Aivana calls
 │       ├── test_aivana_client.py
 │       ├── test_resume.py
+│       ├── test_job_summary.py
 │       ├── test_benchmark.py
 │       ├── test_scenarios.py
 │       ├── test_fit_analysis_live.py
@@ -211,6 +213,7 @@ drift apart.
 | GET | `/api/health` | runs `SELECT 1`; `200 {status: ok, database: <dialect>}`, or `503` if the database is unreachable |
 | POST | `/api/jobs/search` | `Job[]` from JSearch when `JOB_API_MODE=jsearch`, canned otherwise; filters: location, job functions (1-5, one JSearch request each), experience levels, job types, work models; logs the search to the DB; `502 {detail: {message, code}}` if JSearch fails |
 | POST | `/api/jobs/fit-analysis` | `FitAnalysisResult` from Aivana in live mode (8-20 s), canned in mock mode; `502 {detail: {message, code, request_id}}` if Aivana fails |
+| POST | `/api/jobs/summary` | `{job}` → `JobSummary`: the posting boiled down for the job page (overview, duties, must-haves, nice-to-haves, work authorization and pay as stated, at most 300 words) by the baseline model (`BASELINE_MODEL`), cached in memory for 24 h per posting; canned with `BASELINE_MODE=mock`; `502 {detail: {message, code: summary_failed}}` if it can't be made |
 | POST | `/api/interview/sessions` | creates a persisted session and returns exactly five distinct Aivana-generated questions for the supplied company, position, and mode; optional `resume_text` enables resume-aware generation and stores an immutable session snapshot; requires `AIVANA_MODE=live` |
 | POST | `/api/interview/sessions/{session_id}/answers` | evaluates the current answer with Aivana, persists its 0–10 score and structured feedback, then advances the persisted question index; resume context is included only for resume-related questions |
 | POST | `/api/interview/sessions/{session_id}/summary` | generates and caches one concise Aivana summary after all five answers; scores and question results come from SQLite, with optional resume-based feedback for resume-aware sessions |
@@ -227,8 +230,8 @@ drift apart.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 150 tests
-cd frontend && npm test                 # 91 tests
+cd backend && .venv/bin/pytest          # 159 tests
+cd frontend && npm test                 # 94 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`
@@ -404,7 +407,13 @@ Results are listed without being analyzed. Opening a job shows its page: company
 title, when and where it was posted, Apply externally / Save / Share / Practice
 interview, "At a glance" (pay, work model and location, job type), the description
 (long ones folded behind "Show more"), "What this job offers" (benefits), and the fit
-analysis, which starts when the page opens. Anything the posting doesn't say is left
+analysis, which starts when the page opens. Instead of the raw description the page
+shows a job summary (overview, what you'll do, must-haves, nice-to-haves, work
+authorization, pay; at most 300 words, the full text folded below). Summaries come from
+the fast baseline model rather than Aivana so they're ready on opening: right after a
+search the results are summarized one at a time, and a job opened before its turn is
+summarized at once. Until a summary arrives, or if it can't be made, the description is
+shown as written. Anything the posting doesn't say is left
 out. Saved jobs are kept in the browser; the account menu's "Saved jobs (n)" opens
 the list. Share uses the
 browser's share sheet, or copies the posting link where there is none. An interview started

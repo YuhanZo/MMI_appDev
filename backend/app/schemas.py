@@ -83,11 +83,26 @@ class FitAnalysisRequest(BaseModel):
     user_profile: UserProfile
 
 
+class JobSummary(BaseModel):
+    """The posting itself, boiled down (at most 300 words in all)."""
+
+    overview: str  # 1-2 sentences
+    duties: list[str]  # what you'll do, up to 5
+    required: list[str]  # must-haves, up to 5
+    preferred: list[str]  # nice-to-haves, up to 3
+    authorization: str  # work authorization / sponsorship as the posting states it, or "Not mentioned"
+    pay: str  # pay as the posting states it, or "Not mentioned"
+
+
 class FitAnalysisResult(BaseModel):
     summary: str
     strengths: list[str]
     gaps: list[str]
     recommendations: list[str]
+
+
+class JobSummaryRequest(BaseModel):
+    job: Job
 
 
 MAX_BENCHMARK_PROMPT = 4000  # characters; Aivana's own limit is 20,000
