@@ -40,10 +40,22 @@ describe('profileStorage', () => {
   })
 
   it('maps a career profile to the shared UserProfile format', () => {
-    expect(toUserProfile(MOCK_CAREER_PROFILE)).toEqual({
+    expect(toUserProfile({ ...MOCK_CAREER_PROFILE, resumeText: 'Resume text.' })).toEqual({
       skills: ['Python', 'Java', 'React'],
       education: 'BS Computer Science, The Ohio State University, class of 2027',
       experience: 'Entry Level. Backend and web development project experience.',
+      target_role: 'Software Engineer',
+      preferred_location: 'Columbus, OH',
+      work_arrangement: 'Hybrid',
+      salary_range: '$70,000 – $90,000',
+      priorities: ['Career Growth', 'Work-Life Balance', 'Salary'],
+      resume_text: 'Resume text.',
     })
+  })
+
+  it('keeps a profile saved before resumes existed, with no resume', () => {
+    const { resumeText: _text, resumeFileName: _name, ...older } = { ...MOCK_CAREER_PROFILE, targetRole: 'Data Analyst' }
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(older))
+    expect(loadCareerProfile()).toMatchObject({ targetRole: 'Data Analyst', resumeText: '', resumeFileName: '' })
   })
 })

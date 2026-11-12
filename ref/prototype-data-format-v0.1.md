@@ -80,7 +80,13 @@ Used for fit analysis and mock interview.
 {
   "skills": ["Python", "Java", "React"],
   "education": "BS Computer Science",
-  "experience": "Backend and web development project experience."
+  "experience": "Backend and web development project experience.",
+  "target_role": "Software Engineer",
+  "preferred_location": "Columbus, OH",
+  "work_arrangement": "Hybrid",
+  "salary_range": "$70,000 – $90,000",
+  "priorities": ["Career Growth", "Salary"],
+  "resume_text": ""
 }
 ```
 
@@ -91,6 +97,13 @@ Used for fit analysis and mock interview.
 | `skills` | string[] |
 | `education` | string |
 | `experience` | string |
+| `target_role`, `preferred_location`, `work_arrangement`, `salary_range` | string (optional, default `""`) |
+| `priorities` | string[] (optional, default `[]`) |
+| `resume_text` | string (optional, default `""`; at most 15,000 characters; text from `POST /api/profile/resume`) |
+
+**ResumeUploadResult** (`POST /api/profile/resume`, multipart `file`): `filename`
+(string), `text` (string, the resume's plain text, at most 15,000 characters),
+`truncated` (boolean, the file had more text than was kept).
 
 ---
 

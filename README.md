@@ -135,6 +135,7 @@ SQLite.
 │   │   ├── aivana.py          Aivana MMI client: timeout, retries, typed errors
 │   │   ├── fit_analysis.py    prompt + format check for AI fit analysis
 │   │   ├── interview_ai.py    prompt + validation for five generated questions
+│   │   ├── resume.py          text from an uploaded resume (PDF, .docx, .txt)
 │   │   ├── job_api.py         JSearch client: query params, post-filters, 24 h disk cache
 │   │   ├── config.py          env-driven settings (reads .env)
 │   │   ├── db.py              engine + get_db session dependency
@@ -143,10 +144,12 @@ SQLite.
 │   │   ├── mock_data.py       placeholder jobs, questions, analysis, feedback
 │   │   └── routers/
 │   │       ├── jobs.py        /api/jobs/search, /api/jobs/fit-analysis
-│   │       └── interview.py   interview session, questions, and feedback APIs
+│   │       ├── interview.py   interview session, questions, and feedback APIs
+│   │       └── profile.py     /api/profile/resume
 │   └── tests/
 │       ├── conftest.py        throwaway SQLite per test, test client, no real Aivana calls
 │       ├── test_aivana_client.py
+│       ├── test_resume.py
 │       ├── test_fit_analysis_live.py
 │       ├── test_job_search_jsearch.py
 │       ├── test_health.py
@@ -165,7 +168,7 @@ SQLite.
         ├── features/jobs      job search filter chips, result cards, fit panel
         ├── features/interview setup, five-question session, feedback,
         │                      completion and summary components
-        ├── features/profile   editable profile page, saved in the browser
+        ├── features/profile   editable profile page and resume upload, saved in the browser
         ├── App.css            layout and component styles (Google Drive-inspired)
         ├── index.css          color tokens (light + dark), base styles
         ├── icons.tsx          inline SVG icons
@@ -197,6 +200,7 @@ drift apart.
 | POST | `/api/interview/sessions` | creates a persisted session and returns exactly five distinct Aivana-generated questions for the supplied company, position, and mode; requires `AIVANA_MODE=live` |
 | POST | `/api/interview/sessions/{session_id}/answers` | evaluates the current answer with Aivana, persists its 0–10 score and structured feedback, then advances the persisted question index |
 | POST | `/api/interview/sessions/{session_id}/summary` | generates and caches one concise Aivana summary after all five answers; scores and question results come from SQLite |
+| POST | `/api/profile/resume` | multipart `file` (PDF, Word .docx or .txt, up to 5 MB) → `ResumeUploadResult {filename, text, truncated}`: the resume's plain text, at most 15,000 characters; nothing is stored on the server; `413` over 5 MB, `422 {detail: {message, code: bad_resume}}` for an unreadable or unsupported file |
 | GET | `/api/interview/questions?mode=behavioral\|technical` | five prepared questions for the selected mode |
 | POST | `/api/interview/feedback` | `InterviewFeedback` (mocked) |
 | POST | `/api/interview/detailed-feedback` | prepared mode-specific detailed feedback |
@@ -205,8 +209,8 @@ drift apart.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 52 tests
-cd frontend && npm test                 # 46 tests
+cd backend && .venv/bin/pytest          # 94 tests
+cd frontend && npm test                 # 53 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`
@@ -247,7 +251,9 @@ Set in `backend/.env` (never commit the key; `.env` is gitignored):
 With `AIVANA_MODE=live` and no key or URL, the backend refuses to start and says
 why. A key used against the wrong environment gets `401 invalid_api_key`.
 
-Fit analysis (`backend/app/fit_analysis.py`) sends the job and profile with a
+Fit analysis (`backend/app/fit_analysis.py`) sends the job, the profile (skills,
+education, experience, target role, location, work arrangement, salary range and
+priorities) and, if one was uploaded on the Profile page, the resume text with a
 JSON template in the prompt and `output_shape: "extract"`, then validates
 Aivana's `structured` reply against `FitAnalysisResult`. A wrong shape is
 retried once, then returned as 502 `bad_output`. Transport retries and the
@@ -321,8 +327,8 @@ call JSearch: `conftest.py` forces mock mode and fails on any real request.
 - Fit analysis, interview-session questions, and session answer feedback use Aivana; interview summaries are still prepared data.
 - Mock job search only filters by role; the other filters apply with JSearch.
 - No auth. `search_logs.user_id` is nullable and always null. The profile is
-  saved in the browser (localStorage), not the database; fit analysis sends
-  its skills, education and experience.
+  saved in the browser (localStorage), not the database, and so is the uploaded
+  resume's text; fit analysis sends both.
 - `FitAnalysisResult` has no `match_score`, though the proposal's success
   criteria and UI mockup both call for one.
 - Tables are created via `create_all`; move to Alembic once the schema settles.

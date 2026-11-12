@@ -38,7 +38,7 @@ class HttpReply {
   }
 }
 
-/** The app opens on Home; job-search tests go to the Job Search view first, which searches with the default filters. */
+/** The app opens on Home; job-search tests go to the Job Search view first. */
 async function openJobSearch(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: 'Job Search' }))
 }
@@ -47,6 +47,15 @@ async function openJobSearch(user: ReturnType<typeof userEvent.setup>) {
 async function openFilter(user: ReturnType<typeof userEvent.setup>, heading: string) {
   await user.click(await screen.findByRole('button', { name: new RegExp(`^${heading}:`) }))
   return screen.getByRole('dialog', { name: heading })
+}
+
+/** Nothing is searched until a job function is chosen and Search is pressed. */
+async function searchJobs(user: ReturnType<typeof userEvent.setup>, jobFunction = 'Software Engineer Intern') {
+  await openJobSearch(user)
+  const dialog = await openFilter(user, 'Job Function')
+  await user.type(within(dialog).getByLabelText('Enter a job function'), `${jobFunction}{Enter}`)
+  await user.click(within(dialog).getByRole('button', { name: 'Confirm' }))
+  await user.click(screen.getByRole('button', { name: 'Search' }))
 }
 
 function searchBodies(fetchMock: ReturnType<typeof mockApi>) {
@@ -182,7 +191,7 @@ describe('App', () => {
     mockApi()
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     const results = await screen.findByRole('list', { name: 'Job results' })
     expect(within(results).getByText('Software Engineer Intern')).toBeInTheDocument()
@@ -198,7 +207,7 @@ describe('App', () => {
     mockApi({ '/api/jobs/fit-analysis': pending })
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     expect(await screen.findByText('Analyzing your fit…')).toBeInTheDocument()
     const results = screen.getByRole('list', { name: 'Job results' })
@@ -212,20 +221,27 @@ describe('App', () => {
   it('sends the saved profile with the fit analysis request', async () => {
     localStorage.setItem(
       'mmi-career-profile',
-      JSON.stringify({ ...MOCK_CAREER_PROFILE, skills: ['Go', 'SQL'], experienceSummary: 'Two data internships.' }),
+      JSON.stringify({
+        ...MOCK_CAREER_PROFILE,
+        skills: ['Go', 'SQL'],
+        experienceSummary: 'Two data internships.',
+        resumeText: 'Built ETL pipelines in Go.',
+      }),
     )
     const fetchMock = mockApi()
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     await waitFor(() => {
       const call = fetchMock.mock.calls.find(([url]) => url === '/api/jobs/fit-analysis')
       expect(call).toBeDefined()
-      expect(JSON.parse(String(call![1]?.body)).user_profile).toEqual({
+      expect(JSON.parse(String(call![1]?.body)).user_profile).toMatchObject({
         skills: ['Go', 'SQL'],
         education: 'BS Computer Science, The Ohio State University, class of 2027',
         experience: 'Entry Level. Two data internships.',
+        target_role: 'Software Engineer',
+        resume_text: 'Built ETL pipelines in Go.',
       })
     })
     localStorage.clear()
@@ -235,7 +251,7 @@ describe('App', () => {
     mockApi()
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     await user.click(await screen.findByRole('button', { name: /Practice interview/ }))
 
@@ -247,7 +263,7 @@ describe('App', () => {
     const fetchMock = mockApi()
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
 
     await waitFor(() => {
@@ -267,7 +283,7 @@ describe('App', () => {
     mockApi({ '/api/jobs/fit-analysis': new Promise(() => {}) })
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     const panel = await screen.findByRole('complementary', { name: 'Fit analysis' })
     await within(panel).findByText('Analyzing your fit…')
@@ -288,7 +304,7 @@ describe('App', () => {
     mockApi({ '/api/jobs/search': [{ ...JOB, url: '' }] })
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     const panel = await screen.findByRole('complementary', { name: 'Fit analysis' })
     expect(await within(panel).findByRole('heading', { name: 'Software Engineer Intern' })).toBeInTheDocument()
@@ -299,7 +315,7 @@ describe('App', () => {
     mockApi({ '/api/jobs/search': new Error('500 Internal Server Error') })
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     expect(await screen.findByText(/Search failed: .*500 Internal Server Error/)).toBeInTheDocument()
   })
@@ -312,7 +328,7 @@ describe('App', () => {
     })
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     expect(
       await screen.findByText("Couldn't analyze this job: Error: Aivana returned an invalid response (request req_42)"),
@@ -323,7 +339,7 @@ describe('App', () => {
     mockApi({ '/api/jobs/fit-analysis': new HttpReply(502, 'Bad Gateway') })
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     expect(await screen.findByText("Couldn't analyze this job: Error: 502 Bad Gateway")).toBeInTheDocument()
   })
@@ -332,7 +348,7 @@ describe('App', () => {
     mockApi({ '/api/jobs/search': [{ ...JOB, company_logo: 'https://example.com/logo.png' }] })
     const user = userEvent.setup()
     const { container } = render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     await screen.findByRole('list', { name: 'Job results' })
 
@@ -344,7 +360,7 @@ describe('App', () => {
     const fetchMock = mockApi({ '/api/jobs/search': [JOB, second] })
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     const list = await screen.findByRole('list', { name: 'Job results' })
     const secondCard = within(list).getByRole('button', { name: /Data Analyst Intern/ })
@@ -367,7 +383,7 @@ describe('App', () => {
     const fitCalls = () => fetchMock.mock.calls.filter(([url]) => url === '/api/jobs/fit-analysis').length
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     const list = await screen.findByRole('list', { name: 'Job results' })
     await screen.findByText('Overall fit summary.') // first job analyzed automatically
@@ -384,7 +400,7 @@ describe('App', () => {
     const fetchMock = mockApi({ '/api/jobs/fit-analysis': new Promise((resolve) => (finish = resolve)) })
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     const list = await screen.findByRole('list', { name: 'Job results' })
     await screen.findByText('Analyzing your fit…')
@@ -402,7 +418,7 @@ describe('App', () => {
     mockApi({ '/api/jobs/fit-analysis': () => new Promise((resolve) => replies.push(resolve)) })
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     const list = await screen.findByRole('list', { name: 'Job results' })
     await waitFor(() => expect(replies).toHaveLength(1)) // analysis for the old profile, still running
@@ -432,10 +448,10 @@ describe('App', () => {
       fetchMock.mock.calls.filter(([url]) => url === '/api/jobs/fit-analysis').map(([, init]) => JSON.parse(String(init?.body)))
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     await waitFor(() => expect(fitBodies()).toHaveLength(1))
-    await user.click(within(await openFilter(user, 'Location')).getByRole('button', { name: 'Confirm' })) // same id, new description
+    await user.click(screen.getByRole('button', { name: 'Search' })) // same id, new description
     await waitFor(() => expect(fitBodies()).toHaveLength(2))
     expect(fitBodies()[1].job.description).toBe('Updated description.')
   })
@@ -451,7 +467,7 @@ describe('App', () => {
       fetchMock.mock.calls.filter(([url]) => url === '/api/jobs/fit-analysis').map(([, init]) => JSON.parse(String(init?.body)).job.id)
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     const list = await screen.findByRole('list', { name: 'Job results' })
     await waitFor(() => expect(replies).toHaveLength(1)) // job_001 analyzing
@@ -479,7 +495,7 @@ describe('App', () => {
     })
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Aivana is busy right now')
     await user.click(screen.getByRole('button', { name: 'Retry' }))
@@ -494,7 +510,7 @@ describe('App', () => {
     const fitCalls = () => fetchMock.mock.calls.filter(([url]) => url === '/api/jobs/fit-analysis').length
     const user = userEvent.setup()
     render(<App />)
-    await openJobSearch(user)
+    await searchJobs(user)
 
     const list = await screen.findByRole('list', { name: 'Job results' })
     await waitFor(() => expect(fitCalls()).toBe(1))
@@ -505,14 +521,37 @@ describe('App', () => {
     localStorage.clear()
   })
 
-  it('searches again with the filters chosen in each chip', async () => {
+  it("doesn't search until a job function is chosen and Search is pressed", async () => {
     const fetchMock = mockApi()
     const user = userEvent.setup()
     render(<App />)
     await openJobSearch(user)
-    await waitFor(() => expect(searchBodies(fetchMock)).toHaveLength(1))
 
-    let dialog = await openFilter(user, 'Experience Level')
+    const search = screen.getByRole('button', { name: 'Search' })
+    expect(search).toBeDisabled()
+    expect(search).toHaveAttribute('title', 'Add a job function first')
+    expect(screen.getByText('Choose your filters, then press Search.')).toBeInTheDocument()
+
+    const dialog = await openFilter(user, 'Job Function')
+    await user.type(within(dialog).getByLabelText('Enter a job function'), 'Backend Engineer{Enter}')
+    await user.click(within(dialog).getByRole('button', { name: 'Confirm' }))
+    expect(searchBodies(fetchMock)).toHaveLength(0) // confirming a filter doesn't search
+
+    await user.click(screen.getByRole('button', { name: 'Search' }))
+    await waitFor(() => expect(searchBodies(fetchMock)).toHaveLength(1))
+  })
+
+  it('sends the filters chosen in each chip when Search is pressed', async () => {
+    const fetchMock = mockApi()
+    const user = userEvent.setup()
+    render(<App />)
+    await openJobSearch(user)
+
+    let dialog = await openFilter(user, 'Job Function')
+    await user.type(within(dialog).getByLabelText('Enter a job function'), 'Software Engineer Intern{Enter}')
+    await user.click(within(dialog).getByRole('button', { name: 'Confirm' }))
+
+    dialog = await openFilter(user, 'Experience Level')
     await user.click(within(dialog).getByLabelText('Intern/New Grad'))
     await user.click(within(dialog).getByLabelText('Entry Level'))
     await user.click(within(dialog).getByRole('button', { name: 'Confirm' }))
@@ -522,8 +561,10 @@ describe('App', () => {
     await user.click(within(dialog).getByLabelText('Onsite'))
     await user.click(within(dialog).getByRole('button', { name: 'Confirm' }))
 
-    await waitFor(() => expect(searchBodies(fetchMock)).toHaveLength(3))
-    expect(searchBodies(fetchMock)[2]).toMatchObject({
+    await user.click(screen.getByRole('button', { name: 'Search' }))
+    await waitFor(() => expect(searchBodies(fetchMock)).toHaveLength(1))
+    expect(searchBodies(fetchMock)[0]).toMatchObject({
+      job_functions: ['Software Engineer Intern'],
       experience_levels: ['intern', 'entry'],
       work_models: ['onsite', 'hybrid'], // in option order, not click order
       job_types: [],
@@ -534,34 +575,35 @@ describe('App', () => {
     )
   })
 
-  it('adds and removes job functions, and needs at least one', async () => {
+  it('adds and removes job functions', async () => {
     const fetchMock = mockApi()
     const user = userEvent.setup()
     render(<App />)
     await openJobSearch(user)
 
-    const dialog = await openFilter(user, 'Job Function')
+    let dialog = await openFilter(user, 'Job Function')
     await user.type(within(dialog).getByLabelText('Enter a job function'), 'Backend Engineer{Enter}')
     await user.type(within(dialog).getByLabelText('Enter a job function'), 'Python Engineer') // added on Confirm
-    await user.click(within(dialog).getByRole('button', { name: 'Remove Software Engineer Intern' }))
     await user.click(within(dialog).getByRole('button', { name: 'Confirm' }))
-
-    await waitFor(() => expect(searchBodies(fetchMock)).toHaveLength(2))
-    expect(searchBodies(fetchMock)[1].job_functions).toEqual(['Backend Engineer', 'Python Engineer'])
     expect(screen.getByRole('button', { name: 'Job Function: Backend Engineer (+1)' })).toBeInTheDocument()
 
-    const again = await openFilter(user, 'Job Function')
-    await user.click(within(again).getByRole('button', { name: 'Remove Backend Engineer' }))
-    await user.click(within(again).getByRole('button', { name: 'Remove Python Engineer' }))
-    expect(within(again).getByRole('button', { name: 'Confirm' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'Search' }))
+    await waitFor(() => expect(searchBodies(fetchMock)).toHaveLength(1))
+    expect(searchBodies(fetchMock)[0].job_functions).toEqual(['Backend Engineer', 'Python Engineer'])
+
+    // Removing them all leaves nothing to search for.
+    dialog = await openFilter(user, 'Job Function')
+    await user.click(within(dialog).getByRole('button', { name: 'Remove Backend Engineer' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Remove Python Engineer' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Confirm' }))
+    expect(screen.getByRole('button', { name: 'Search' })).toBeDisabled()
   })
 
   it('drops unconfirmed changes when the popover is closed with Escape', async () => {
-    const fetchMock = mockApi()
+    mockApi()
     const user = userEvent.setup()
     render(<App />)
     await openJobSearch(user)
-    await waitFor(() => expect(searchBodies(fetchMock)).toHaveLength(1))
 
     let dialog = await openFilter(user, 'Job Type')
     await user.click(within(dialog).getByLabelText('Internship'))
@@ -571,7 +613,6 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: 'Job Type: Any' })).toHaveFocus()
     dialog = await openFilter(user, 'Job Type')
     expect(within(dialog).getByLabelText('Internship')).not.toBeChecked()
-    expect(searchBodies(fetchMock)).toHaveLength(1)
   })
 
   it('runs a question -> answer -> feedback round trip', async () => {
