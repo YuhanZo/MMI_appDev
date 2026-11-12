@@ -686,6 +686,6 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Skills & Experience' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Career Preferences' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Career Priorities' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Edit Profile' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Edit About Me' })).toBeInTheDocument()
   })
 })

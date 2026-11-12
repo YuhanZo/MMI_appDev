@@ -210,7 +210,7 @@ drift apart.
 
 ```bash
 cd backend && .venv/bin/pytest          # 94 tests
-cd frontend && npm test                 # 53 tests
+cd frontend && npm test                 # 62 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`
