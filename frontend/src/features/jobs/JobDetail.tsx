@@ -105,7 +105,7 @@ export default function JobDetail({
               Share
             </button>
           )}
-          <button type="button" className="btn-outline" onClick={() => onPracticeInterview(job)}>
+          <button type="button" className="btn-gradient" onClick={() => onPracticeInterview(job)}>
             <Icon name="mic" size={18} />
             Practice interview
           </button>

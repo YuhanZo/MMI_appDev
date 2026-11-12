@@ -260,6 +260,32 @@
   margin-top: var(--aivana-space-4);
 }
 
+/* Mint-to-cream gradient. The background stays light in both themes, so the text
+   is a fixed dark colour rather than a theme token. */
+.btn-gradient {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--aivana-touch-preferred);
+  padding: 0 var(--aivana-space-4);
+  border: 1px solid #c9e8d8;
+  border-radius: var(--aivana-radius-md);
+  background: linear-gradient(90deg, #d4f3e6, #f7f8e1);
+  color: #1d3a32;
+  font-weight: 600;
+  transition: filter var(--aivana-motion-fast);
+}
+
+.btn-gradient:hover {
+  filter: brightness(0.97);
+}
+
+.btn-gradient:focus-visible {
+  outline: var(--aivana-focus-ring);
+  outline-offset: var(--aivana-focus-offset);
+}
+
 .job-share-note {
   color: var(--aivana-color-text-secondary);
   font-size: 13px;
