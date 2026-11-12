@@ -111,7 +111,7 @@ describe('InterviewWorkspace', () => {
     const fetchMock = mockInterviewApi()
     render(<InterviewWorkspace mode="behavioral" onTryOtherMode={vi.fn()} />)
 
-    expect(screen.getByRole('heading', { name: 'Behavioral Interview Setup' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Behavioral Interview Setup' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Technical Interview' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start Interview' })).toBeDisabled()
     expect(screen.getByText('No Resume Uploaded')).toBeInTheDocument()
@@ -281,7 +281,7 @@ describe('InterviewWorkspace', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('500 Error')
     expect(screen.getByLabelText('Company')).toHaveValue('Aivana')
     expect(screen.getByLabelText('Position / Job Title')).toHaveValue('Engineer')
-    expect(screen.getByRole('heading', { name: 'Behavioral Interview Setup' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Behavioral Interview Setup' })).toBeInTheDocument()
   })
 
   it('returns to a cleared setup screen', async () => {
@@ -290,7 +290,7 @@ describe('InterviewWorkspace', () => {
     await screen.findByText('Technical question 1')
     await user.click(screen.getByRole('button', { name: 'Back to Interview Setup' }))
 
-    expect(screen.getByRole('heading', { name: 'Technical Interview Setup' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Technical Interview Setup' })).toBeInTheDocument()
     expect(screen.getByLabelText('Company')).toHaveValue('')
     expect(screen.getByLabelText('Position / Job Title')).toHaveValue('')
   })

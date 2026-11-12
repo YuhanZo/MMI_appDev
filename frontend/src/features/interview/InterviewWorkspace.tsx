@@ -198,9 +198,7 @@ export default function InterviewWorkspace({
     <div className="interview-workspace">
       <header className="interview-page-header">
         <div>
-          <p className="interview-eyebrow">Aivana MMI Frontend Prototype</p>
           <h1>{modeLabel} Interview</h1>
-          <p>Practice five {modeLabel.toLowerCase()} questions with real Aivana feedback.</p>
         </div>
         <div className="interview-header-meta">
           {session.stage !== 'setup' && (
@@ -208,10 +206,6 @@ export default function InterviewWorkspace({
               Back to Interview Setup
             </button>
           )}
-          <aside className="interview-status-card" aria-label="Session status">
-            <span>Current Mode</span>
-            <strong>{modeLabel} Interview</strong>
-          </aside>
         </div>
       </header>
 

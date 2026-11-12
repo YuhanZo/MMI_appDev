@@ -788,7 +788,7 @@ describe('App', () => {
     render(<App />)
 
     await user.click(screen.getByRole('button', { name: 'Technical Interview' }))
-    expect(screen.getByRole('heading', { name: 'Technical Interview Setup' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Technical Interview Setup' })).toBeVisible()
   })
 
   it('opens the enhanced profile from the existing account menu', async () => {

@@ -25,13 +25,7 @@ export default function InterviewSetup({
   const ready = company.trim().length > 0 && position.trim().length > 0
 
   return (
-    <section className="interview-panel interview-setup-panel" aria-labelledby={`${mode}-setup-title`}>
-      <h2 id={`${mode}-setup-title`} className="interview-section-title">
-        {label} Interview Setup
-      </h2>
-      <p className="interview-muted">
-        Tell us which opportunity you are preparing for, then start your {label.toLowerCase()} practice session.
-      </p>
+    <section className="interview-panel interview-setup-panel" aria-label={`${label} Interview Setup`}>
       <div className={`interview-resume-status${hasResume ? ' uploaded' : ''}`} aria-label="Resume status">
         <strong>{hasResume ? 'Resume Uploaded' : 'No Resume Uploaded'}</strong>
         <span>
