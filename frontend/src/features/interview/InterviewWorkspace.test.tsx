@@ -45,9 +45,19 @@ function jsonResponse(body: unknown, ok = true): Response {
   return { ok, status: ok ? 200 : 500, statusText: ok ? 'OK' : 'Error', json: async () => body } as Response
 }
 
-function mockInterviewApi(options: { failFeedback?: boolean; failSession?: boolean; slowFeedback?: boolean } = {}) {
+const ROLE = { id: 'role-1', title: 'Engineer', company: 'Aivana', location: 'Remote', description: '', url: '', company_logo: '', posted_at: '2 days ago' }
+// JSearch also returns other companies' jobs; the setup leaves those out.
+const OTHER_COMPANY = { ...ROLE, id: 'role-2', company: 'Other Company' }
+
+function mockInterviewApi(
+  options: { failFeedback?: boolean; failSession?: boolean; slowFeedback?: boolean; roles?: unknown[] | Error } = {},
+) {
   let sessionNumber = 0
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+    if (url === '/api/jobs/search') {
+      if (options.roles instanceof Error) return jsonResponse({}, false)
+      return jsonResponse(options.roles ?? [ROLE, OTHER_COMPANY])
+    }
     if (url === '/api/interview/sessions') {
       if (options.failSession) return jsonResponse({}, false)
       sessionNumber += 1
@@ -91,12 +101,18 @@ function mockInterviewApi(options: { failFeedback?: boolean; failSession?: boole
   return fetchMock
 }
 
+/** Looks up what was typed and starts the interview for the first role found. */
+async function startForFoundRole(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: 'Find this role' }))
+  await user.click(await screen.findByRole('button', { name: 'Start interview for this role' }))
+}
+
 async function startInterview(mode: 'behavioral' | 'technical') {
   const user = userEvent.setup()
   render(<InterviewWorkspace mode={mode} onTryOtherMode={vi.fn()} />)
   await user.type(screen.getByLabelText('Company'), 'Aivana')
   await user.type(screen.getByLabelText('Position / Job Title'), 'Engineer')
-  await user.click(screen.getByRole('button', { name: 'Start Interview' }))
+  await startForFoundRole(user)
   return user
 }
 
@@ -113,7 +129,7 @@ describe('InterviewWorkspace', () => {
 
     expect(screen.getByRole('region', { name: 'Behavioral Interview Setup' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Technical Interview' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Start Interview' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Find this role' })).toBeDisabled()
     expect(screen.getByText('No Resume Uploaded')).toBeInTheDocument()
     expect(fetchMock).not.toHaveBeenCalled()
   })
@@ -132,7 +148,7 @@ describe('InterviewWorkspace', () => {
     expect(screen.getByText('Resume Uploaded')).toBeInTheDocument()
     await user.type(screen.getByLabelText('Company'), 'Aivana')
     await user.type(screen.getByLabelText('Position / Job Title'), 'Engineer')
-    await user.click(screen.getByRole('button', { name: 'Start Interview' }))
+    await startForFoundRole(user)
 
     const createCall = fetchMock.mock.calls.find(([url]) => url === '/api/interview/sessions')
     expect(JSON.parse(String(createCall?.[1]?.body))).toEqual({
@@ -276,12 +292,74 @@ describe('InterviewWorkspace', () => {
 
     await user.type(screen.getByLabelText('Company'), 'Aivana')
     await user.type(screen.getByLabelText('Position / Job Title'), 'Engineer')
-    await user.click(screen.getByRole('button', { name: 'Start Interview' }))
+    await startForFoundRole(user)
 
     expect(await screen.findByRole('alert')).toHaveTextContent('500 Error')
     expect(screen.getByLabelText('Company')).toHaveValue('Aivana')
     expect(screen.getByLabelText('Position / Job Title')).toHaveValue('Engineer')
     expect(screen.getByRole('region', { name: 'Behavioral Interview Setup' })).toBeInTheDocument()
+  })
+
+  it('lists the open roles found at that company and starts with the chosen one', async () => {
+    const roles = [ROLE, { ...ROLE, id: 'role-3', title: 'Senior Engineer', location: 'Seattle, WA' }, OTHER_COMPANY]
+    const fetchMock = mockInterviewApi({ roles })
+    const user = userEvent.setup()
+    render(<InterviewWorkspace mode="behavioral" onTryOtherMode={vi.fn()} />)
+    await user.type(screen.getByLabelText('Company'), 'aivana')
+    await user.type(screen.getByLabelText('Position / Job Title'), 'engineer{Enter}') // Enter looks it up
+
+    const list = await screen.findByRole('group', { name: /Found 2 open roles at Aivana/ })
+    expect(within(list).getAllByRole('radio').map((r) => r.closest('label')!.textContent)).toEqual([
+      'EngineerRemote · 2 days ago',
+      'Senior EngineerSeattle, WA · 2 days ago',
+    ])
+    const search = JSON.parse(String(fetchMock.mock.calls.find(([url]) => url === '/api/jobs/search')![1]?.body))
+    expect(search.job_functions).toEqual(['engineer at aivana'])
+
+    await user.click(within(list).getByLabelText(/Senior Engineer/))
+    await user.click(screen.getByRole('button', { name: 'Start interview for this role' }))
+    await screen.findByText('Behavioral question 1')
+    const session = JSON.parse(String(fetchMock.mock.calls.find(([url]) => url === '/api/interview/sessions')![1]?.body))
+    expect(session).toMatchObject({ company: 'Aivana', position: 'Senior Engineer' }) // the posting's own names
+  })
+
+  it('does not start when no matching role is found', async () => {
+    const fetchMock = mockInterviewApi({ roles: [OTHER_COMPANY] })
+    const user = userEvent.setup()
+    render(<InterviewWorkspace mode="behavioral" onTryOtherMode={vi.fn()} />)
+    await user.type(screen.getByLabelText('Company'), 'microsoft')
+    await user.type(screen.getByLabelText('Position / Job Title'), 'software')
+    await user.click(screen.getByRole('button', { name: 'Find this role' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No open “software” roles found at “microsoft”')
+    expect(screen.queryByRole('button', { name: 'Start interview for this role' })).not.toBeInTheDocument()
+    expect(fetchMock.mock.calls.some(([url]) => url === '/api/interview/sessions')).toBe(false)
+  })
+
+  it('asks for a new lookup after what was typed changes', async () => {
+    mockInterviewApi()
+    const user = userEvent.setup()
+    render(<InterviewWorkspace mode="behavioral" onTryOtherMode={vi.fn()} />)
+    await user.type(screen.getByLabelText('Company'), 'Aivana')
+    await user.type(screen.getByLabelText('Position / Job Title'), 'Engineer')
+    await user.click(screen.getByRole('button', { name: 'Find this role' }))
+    await screen.findByRole('button', { name: 'Start interview for this role' })
+
+    await user.type(screen.getByLabelText('Position / Job Title'), 'ing')
+    expect(screen.queryByRole('group', { name: /Found/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Find this role' })).toBeEnabled()
+  })
+
+  it('explains when the lookup itself fails', async () => {
+    mockInterviewApi({ roles: new Error('down') })
+    const user = userEvent.setup()
+    render(<InterviewWorkspace mode="behavioral" onTryOtherMode={vi.fn()} />)
+    await user.type(screen.getByLabelText('Company'), 'Aivana')
+    await user.type(screen.getByLabelText('Position / Job Title'), 'Engineer')
+    await user.click(screen.getByRole('button', { name: 'Find this role' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't look up roles")
+    expect(screen.getByRole('button', { name: 'Find this role' })).toBeEnabled() // can try again
   })
 
   it('returns to a cleared setup screen', async () => {
@@ -303,7 +381,7 @@ describe('InterviewWorkspace', () => {
 
     await user.type(screen.getByLabelText('Company'), 'Aivana')
     await user.type(screen.getByLabelText('Position / Job Title'), 'Engineer')
-    await user.click(screen.getByRole('button', { name: 'Start Interview' }))
+    await startForFoundRole(user)
 
     for (let index = 1; index <= 5; index += 1) {
       expect(await screen.findByText(`Behavioral question ${index}`)).toBeInTheDocument()

@@ -108,8 +108,10 @@ export default function InterviewWorkspace({
     setSession((current) => ({ ...current, ...patch }))
   }
 
-  function startInterview() {
-    void beginInterview(session.company, session.position)
+  // Started from a real posting chosen in the setup, using its own company and title.
+  function startInterview(company: string, position: string) {
+    updateSession({ company, position, error: '' })
+    void beginInterview(company, position)
   }
 
   function updateAnswer(value: string) {

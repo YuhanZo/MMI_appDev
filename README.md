@@ -116,6 +116,14 @@ snapshot for that session and uses it only for resume-aware questions,
 feedback, and summary content. Session feedback and the final session summary
 also use Aivana and are persisted in SQLite.
 
+Practice interviews start from a real opening. On the interview setup, the typed
+company and title are looked up first (`/api/jobs/search`, so JSearch in
+`JOB_API_MODE=jsearch`): up to five openings at that company whose title shares a word
+with what was typed are listed, and the interview uses the chosen posting's own company
+and title. If none match, the interview can't start until the input is changed. (In
+mock mode only the three canned jobs exist, e.g. "Example Company" / "Software Engineer
+Intern".) An interview started from a job's page skips the lookup.
+
 ## Project structure
 
 ```
@@ -231,7 +239,7 @@ drift apart.
 
 ```bash
 cd backend && .venv/bin/pytest          # 159 tests
-cd frontend && npm test                 # 94 tests
+cd frontend && npm test                 # 98 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`

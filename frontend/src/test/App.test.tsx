@@ -848,9 +848,10 @@ describe('App', () => {
 
     await user.click(screen.getByRole('button', { name: 'Behavioral Interview' }))
     const setup = screen.getByRole('region', { name: 'Behavioral Interview Setup' })
-    await user.type(within(setup).getByLabelText('Company'), 'Aivana')
-    await user.type(within(setup).getByLabelText('Position / Job Title'), 'Engineer')
-    await user.click(within(setup).getByRole('button', { name: 'Start Interview' }))
+    await user.type(within(setup).getByLabelText('Company'), 'Example Company')
+    await user.type(within(setup).getByLabelText('Position / Job Title'), 'Software Engineer Intern')
+    await user.click(within(setup).getByRole('button', { name: 'Find this role' }))
+    await user.click(await within(setup).findByRole('button', { name: 'Start interview for this role' }))
     expect(await screen.findByText(/Tell me about a challenging software project/)).toBeInTheDocument()
 
     await user.type(screen.getByLabelText('Your Answer'), 'I led a project that...')
@@ -879,9 +880,10 @@ describe('App', () => {
 
     await user.click(screen.getByRole('button', { name: 'Behavioral Interview' }))
     const setup = screen.getByRole('region', { name: 'Behavioral Interview Setup' })
-    await user.type(within(setup).getByLabelText('Company'), 'Aivana')
-    await user.type(within(setup).getByLabelText('Position / Job Title'), 'Engineer')
-    await user.click(within(setup).getByRole('button', { name: 'Start Interview' }))
+    await user.type(within(setup).getByLabelText('Company'), 'Example Company')
+    await user.type(within(setup).getByLabelText('Position / Job Title'), 'Software Engineer Intern')
+    await user.click(within(setup).getByRole('button', { name: 'Find this role' }))
+    await user.click(await within(setup).findByRole('button', { name: 'Start interview for this role' }))
 
     const first = await screen.findByLabelText('Your Answer')
     await user.type(first, 'Only for the first question')

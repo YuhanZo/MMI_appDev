@@ -30,6 +30,60 @@
   color: var(--aivana-color-text-primary);
 }
 
+.interview-roles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aivana-space-2);
+  margin: var(--aivana-space-4) 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.interview-roles legend {
+  margin-bottom: var(--aivana-space-2);
+  font-weight: 600;
+}
+
+.interview-roles label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--aivana-space-3);
+  padding: var(--aivana-space-3);
+  border: 1px solid var(--aivana-color-border-hairline);
+  border-radius: var(--aivana-radius-md);
+  cursor: pointer;
+}
+
+.interview-roles label.selected {
+  border-color: var(--aivana-color-accent-teal);
+  background: color-mix(in srgb, var(--aivana-color-accent-teal) 8%, var(--aivana-color-surface-card));
+}
+
+.interview-roles input {
+  margin-top: 3px;
+  accent-color: var(--aivana-color-accent-teal);
+}
+
+.interview-roles label > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.interview-role-meta {
+  color: var(--aivana-color-text-secondary);
+  font-size: 13px;
+}
+
+.interview-role-none {
+  margin: var(--aivana-space-4) 0 0;
+  padding: var(--aivana-space-3);
+  border: 1px solid var(--aivana-status-warning-border);
+  border-radius: var(--aivana-radius-md);
+  background: var(--aivana-status-warning-bg);
+  color: var(--aivana-status-warning-text);
+}
+
 .interview-panel {
   border: 1px solid var(--aivana-color-border-hairline);
   border-radius: var(--aivana-radius-lg);
