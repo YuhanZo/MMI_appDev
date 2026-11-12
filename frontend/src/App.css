@@ -236,6 +236,52 @@
 }
 
 /*Home */
+/* The home page greeting: large and light, typed out by TypingTitle. */
+.panel h1.home-title {
+  margin-bottom: var(--aivana-space-6);
+  font-family: 'Outfit', var(--aivana-font-sans);
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+/* Both layers share one grid cell: the invisible full text holds the space. */
+.typing-title {
+  display: grid;
+}
+
+.typing-space,
+.typing-text {
+  grid-area: 1 / 1;
+}
+
+.typing-space {
+  visibility: hidden;
+}
+
+.typing-caret {
+  display: inline-block;
+  width: 2px;
+  height: 0.9em;
+  margin-left: 4px;
+  vertical-align: -0.05em;
+  background: var(--aivana-color-accent-violet);
+  animation: typing-blink 1s steps(1) infinite;
+}
+
+@keyframes typing-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing-caret {
+    animation: none;
+  }
+}
+
 .home-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

@@ -10,6 +10,7 @@ import { loadSavedJobs, saveSavedJobs, toggleSaved } from './features/jobs/saved
 import ProfileView from './features/profile/ProfileView'
 import ScenarioTestView from './features/scenarios/ScenarioTestView'
 import { Icon, type IconName } from './icons'
+import TypingTitle from './TypingTitle'
 import type { InterviewMode, Job } from './types'
 
 // Display-only user info for the account menu (no sign-in yet)
@@ -50,7 +51,7 @@ const HOME_OPTIONS: { view: View; title: string; description: string; icon: Icon
 function HomeView({ onSelect }: { onSelect: (view: View) => void }) {
   return (
     <>
-      <h1>What would you like to work on?</h1>
+      <TypingTitle className="home-title" text="What would you like to work on?" />
       <div className="home-grid">
         {HOME_OPTIONS.map((o) => (
           <button key={o.view} type="button" className="home-card" onClick={() => onSelect(o.view)}>
