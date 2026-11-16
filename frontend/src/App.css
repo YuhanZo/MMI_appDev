@@ -1,10 +1,27 @@
 /* Layout and components, using Aivana Design */
 
+/* The top bar spans the window; the sidebar and page sit in a centered column at most
+   --page-max wide, with at least --page-gutter of space on each side. */
 .app {
+  --page-max: 1440px;
+  --page-gutter: clamp(16px, 3vw, 48px);
+  --sidebar-width: 256px;
   display: grid;
-  grid-template-columns: 256px minmax(0, 1fr);
+  grid-template-columns:
+    minmax(var(--page-gutter), 1fr)
+    var(--sidebar-width)
+    minmax(0, calc(var(--page-max) - var(--sidebar-width)))
+    minmax(var(--page-gutter), 1fr);
   grid-template-rows: auto 1fr;
   min-height: 100svh;
+}
+
+.app > .sidebar {
+  grid-column: 2;
+}
+
+.app > .panel {
+  grid-column: 3;
 }
 
 .topbar {
@@ -691,6 +708,11 @@
   .app {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto auto 1fr;
+  }
+
+  .app > .sidebar,
+  .app > .panel {
+    grid-column: 1;
   }
 
   .topbar {
