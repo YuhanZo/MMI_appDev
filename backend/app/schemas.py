@@ -182,6 +182,7 @@ class InterviewSessionCreate(BaseModel):
     company: str = Field(min_length=1, max_length=255)
     position: str = Field(min_length=1, max_length=255)
     mode: InterviewMode
+    resume_text: str | None = Field(default=None, max_length=MAX_RESUME_CHARS)
 
 
 class InterviewSessionCreated(BaseModel):
@@ -261,6 +262,14 @@ class GeneratedInterviewSummary(BaseModel):
     )
 
 
+class ResumeGeneratedInterviewSummary(GeneratedInterviewSummary):
+    resume_based_feedback: list[SummaryItem] = Field(
+        min_length=1,
+        max_length=3,
+        validation_alias=AliasChoices("resume_based_feedback", "resumebasedfeedback"),
+    )
+
+
 class SessionInterviewQuestionResult(BaseModel):
     question: str
     answer: str
@@ -273,6 +282,7 @@ class SessionInterviewSummary(GeneratedInterviewSummary):
     total_score: int = Field(ge=0, le=50)
     average_score: float = Field(ge=0, le=10)
     question_results: list[SessionInterviewQuestionResult] = Field(min_length=5, max_length=5)
+    resume_based_feedback: list[SummaryItem] | None = Field(default=None, min_length=1, max_length=3)
 
 
 class InterviewAnswer(BaseModel):

@@ -43,6 +43,12 @@ export default function InterviewSummary({ mode, summary, onTryOtherMode }: Inte
             ))}
           </ul>
         </section>
+        {summary.resume_based_feedback && (
+          <section className="interview-summary-section full">
+            <h3>Resume-Based Feedback</h3>
+            <ul>{summary.resume_based_feedback.map((item) => <li key={item}>{item}</li>)}</ul>
+          </section>
+        )}
         <section className="interview-summary-section full">
           <h3>Suggested Next Steps</h3>
           <ul>{summary.suggested_next_steps.map((item) => <li key={item}>{item}</li>)}</ul>

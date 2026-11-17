@@ -4,6 +4,7 @@ interface InterviewSetupProps {
   mode: InterviewMode
   company: string
   position: string
+  hasResume: boolean
   starting: boolean
   onCompanyChange: (value: string) => void
   onPositionChange: (value: string) => void
@@ -14,6 +15,7 @@ export default function InterviewSetup({
   mode,
   company,
   position,
+  hasResume,
   starting,
   onCompanyChange,
   onPositionChange,
@@ -30,6 +32,14 @@ export default function InterviewSetup({
       <p className="interview-muted">
         Tell us which opportunity you are preparing for, then start your {label.toLowerCase()} practice session.
       </p>
+      <div className={`interview-resume-status${hasResume ? ' uploaded' : ''}`} aria-label="Resume status">
+        <strong>{hasResume ? 'Resume Uploaded' : 'No Resume Uploaded'}</strong>
+        <span>
+          {hasResume
+            ? 'Questions will be personalized using your uploaded resume.'
+            : 'Upload a resume from Profile to personalize your interview.'}
+        </span>
+      </div>
       <div className="interview-setup-grid">
         <div className="interview-field">
           <label htmlFor={`${mode}-company`}>Company</label>

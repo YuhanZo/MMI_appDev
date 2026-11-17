@@ -6,8 +6,10 @@ import pytest
 from sqlalchemy import text
 
 from app import aivana
+from app.interview_ai import ResumeGeneratedQuestion
+from app.models import InterviewSessionRecord
 from app.routers import interview as interview_router
-from app.schemas import GeneratedInterviewSummary, InterviewFeedbackDetail
+from app.schemas import GeneratedInterviewSummary, InterviewFeedbackDetail, ResumeGeneratedInterviewSummary
 
 QUESTION_FIELDS = {"id", "question", "type"}
 FEEDBACK_FIELDS = {"summary", "strengths", "improvements"}
@@ -15,6 +17,14 @@ VALID_TYPES = {"behavioral", "technical", "general"}
 
 
 GENERATED_QUESTIONS = [f"Generated question {index}?" for index in range(1, 6)]
+RESUME_QUESTIONS = [
+    ResumeGeneratedQuestion(question=question, category=category)
+    for question, category in zip(
+        GENERATED_QUESTIONS,
+        ["general", "resume", "resume", "position", "resume_position"],
+        strict=True,
+    )
+]
 GENERATED_FEEDBACK = InterviewFeedbackDetail(
     score=8,
     feedback="Clear and relevant answer.",
@@ -24,18 +34,28 @@ GENERATED_FEEDBACK = InterviewFeedbackDetail(
 )
 
 
-def create_generated_session(client, monkeypatch, mode="behavioral"):
-    monkeypatch.setattr(interview_router, "generate_questions", lambda *args: GENERATED_QUESTIONS)
+def create_generated_session(client, monkeypatch, mode="behavioral", resume_text=None):
+    if resume_text:
+        monkeypatch.setattr(
+            interview_router,
+            "generate_resume_aware_questions",
+            lambda *args: RESUME_QUESTIONS,
+        )
+    else:
+        monkeypatch.setattr(interview_router, "generate_questions", lambda *args: GENERATED_QUESTIONS)
+    payload = {"company": "Aivana", "position": "Backend Engineer", "mode": mode}
+    if resume_text:
+        payload["resume_text"] = resume_text
     response = client.post(
         "/api/interview/sessions",
-        json={"company": "Aivana", "position": "Backend Engineer", "mode": mode},
+        json=payload,
     )
     assert response.status_code == 201
     return response.json()
 
 
-def complete_generated_session(client, monkeypatch, scores=(6, 7, 8, 9, 10)):
-    created = create_generated_session(client, monkeypatch)
+def complete_generated_session(client, monkeypatch, scores=(6, 7, 8, 9, 10), resume_text=None):
+    created = create_generated_session(client, monkeypatch, resume_text=resume_text)
 
     def fake_feedback(**kwargs):
         index = GENERATED_QUESTIONS.index(kwargs["question"])
@@ -105,6 +125,24 @@ def test_create_session_generates_and_persists_five_questions(client, session, m
     assert [turn["question"] for turn in stored_turns] == GENERATED_QUESTIONS
     assert [turn["question_index"] for turn in stored_turns] == list(range(5))
     assert {turn["question_type"] for turn in stored_turns} == {"technical"}
+    assert session.execute(text("SELECT COUNT(*) FROM interview_session_contexts")).scalar_one() == 0
+
+
+def test_create_resume_aware_session_persists_text_and_question_categories(client, session, monkeypatch):
+    resume_text = "Built a Python API and reduced latency by 30%."
+    created = create_generated_session(client, monkeypatch, resume_text=resume_text)
+
+    stored_context = session.execute(
+        text("SELECT session_id, resume_text FROM interview_session_contexts")
+    ).mappings().one()
+    assert stored_context == {"session_id": created["session_id"], "resume_text": resume_text}
+    categories = session.execute(
+        text("SELECT question_type FROM interview_turns ORDER BY question_index")
+    ).scalars().all()
+    assert categories == ["general", "resume", "resume", "position", "resume_position"]
+    assert created["questions"][0]["type"] == "general"
+    assert {question["type"] for question in created["questions"][1:]} == {"behavioral"}
+    assert "resume_text" not in created
 
 
 def test_create_session_does_not_persist_when_aivana_fails(client, session, monkeypatch):
@@ -210,6 +248,89 @@ def test_submit_technical_code_sends_language_and_code(client, monkeypatch):
     assert seen["answer"] == "const stack = [];"
     assert seen["answer_type"] == "code"
     assert seen["language"] == "JavaScript"
+
+
+def test_resume_context_is_sent_only_for_resume_questions(client, monkeypatch):
+    created = create_generated_session(
+        client,
+        monkeypatch,
+        resume_text="Built a Python API and reduced latency by 30%.",
+    )
+    seen = []
+
+    def fake_feedback(**kwargs):
+        seen.append(kwargs)
+        return GENERATED_FEEDBACK
+
+    monkeypatch.setattr(interview_router, "generate_feedback", fake_feedback, raising=False)
+    url = f"/api/interview/sessions/{created['session_id']}/answers"
+    for index in range(2):
+        response = client.post(
+            url,
+            json={"question_index": index, "answer": f"Answer {index}", "answer_type": "text", "language": None},
+        )
+        assert response.status_code == 200
+
+    assert "resume_text" not in seen[0]
+    assert seen[1]["resume_text"] == "Built a Python API and reduced latency by 30%."
+
+
+def test_resume_session_keeps_general_type_for_next_question(client, monkeypatch):
+    reordered = [RESUME_QUESTIONS[1], RESUME_QUESTIONS[0], *RESUME_QUESTIONS[2:]]
+    monkeypatch.setattr(interview_router, "generate_resume_aware_questions", lambda *args: reordered)
+    created = client.post(
+        "/api/interview/sessions",
+        json={
+            "company": "Aivana",
+            "position": "Backend Engineer",
+            "mode": "behavioral",
+            "resume_text": "Python API",
+        },
+    ).json()
+    monkeypatch.setattr(interview_router, "generate_feedback", lambda **kwargs: GENERATED_FEEDBACK)
+
+    response = client.post(
+        f"/api/interview/sessions/{created['session_id']}/answers",
+        json={"question_index": 0, "answer": "Answer", "answer_type": "text", "language": None},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["next_question"]["type"] == "general"
+
+
+def test_deleting_resume_session_deletes_sensitive_context(client, session, monkeypatch):
+    created = create_generated_session(client, monkeypatch, resume_text="Private resume text")
+    record = session.get(InterviewSessionRecord, created["session_id"])
+
+    session.delete(record)
+    session.commit()
+
+    assert session.execute(text("SELECT COUNT(*) FROM interview_session_contexts")).scalar_one() == 0
+
+
+def test_resume_question_without_context_does_not_mutate_answer(client, session, monkeypatch):
+    created = create_generated_session(client, monkeypatch, resume_text="Python API")
+    session.execute(
+        text("UPDATE interview_sessions SET current_question_index = 1 WHERE id = :id"),
+        {"id": created["session_id"]},
+    )
+    session.execute(
+        text("DELETE FROM interview_session_contexts WHERE session_id = :id"),
+        {"id": created["session_id"]},
+    )
+    session.commit()
+
+    response = client.post(
+        f"/api/interview/sessions/{created['session_id']}/answers",
+        json={"question_index": 1, "answer": "Do not save", "answer_type": "text", "language": None},
+    )
+
+    assert response.status_code == 409
+    stored = session.execute(
+        text("SELECT answer, feedback, score FROM interview_turns WHERE session_id = :id AND question_index = 1"),
+        {"id": created["session_id"]},
+    ).mappings().one()
+    assert stored == {"answer": None, "feedback": None, "score": None}
 
 
 def test_submit_answer_failure_does_not_mutate_session(client, session, monkeypatch):
@@ -346,6 +467,30 @@ def test_session_summary_returns_cached_value_without_another_mmi_call(client, m
     assert first.status_code == 200
     assert second.json() == first.json()
     assert calls == 1
+
+
+def test_resume_aware_summary_uses_session_snapshot(client, monkeypatch):
+    resume_text = "Built a Python API and reduced latency by 30%."
+    created = complete_generated_session(client, monkeypatch, resume_text=resume_text)
+    seen = {}
+
+    def fake_summary(company, position, mode, turns, resume_text=""):
+        seen.update(resume_text=resume_text, turns=turns)
+        return ResumeGeneratedInterviewSummary(
+            overall_evaluation="Concise overall evaluation.",
+            strong_areas=["Communication"],
+            areas_to_improve=["Metrics"],
+            suggested_next_steps=["Practice"],
+            resume_based_feedback=["Explain the measured latency improvement."],
+        )
+
+    monkeypatch.setattr(interview_router, "generate_summary", fake_summary, raising=False)
+
+    response = client.post(f"/api/interview/sessions/{created['session_id']}/summary")
+
+    assert response.status_code == 200
+    assert response.json()["resume_based_feedback"] == ["Explain the measured latency improvement."]
+    assert seen["resume_text"] == resume_text
 
 
 def test_session_summary_failure_does_not_persist_partial_summary(client, session, monkeypatch):
