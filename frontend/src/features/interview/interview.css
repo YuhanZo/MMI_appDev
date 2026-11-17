@@ -92,6 +92,30 @@
   margin-top: var(--aivana-space-4);
 }
 
+.interview-resume-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: var(--aivana-space-4);
+  padding: var(--aivana-space-3);
+  border: 1px solid var(--aivana-color-border);
+  border-radius: var(--aivana-radius-md);
+  background: var(--aivana-color-surface-row);
+}
+
+.interview-resume-status strong {
+  color: var(--aivana-color-text-secondary);
+}
+
+.interview-resume-status.uploaded strong {
+  color: var(--aivana-color-success, #188038);
+}
+
+.interview-resume-status span {
+  color: var(--aivana-color-text-secondary);
+  font-size: 13px;
+}
+
 .interview-field {
   display: grid;
   gap: var(--aivana-space-2);

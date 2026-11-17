@@ -69,6 +69,31 @@ def test_generate_feedback_includes_code_and_language(monkeypatch):
     assert "const stack = [];" in seen["prompt"]
 
 
+def test_generate_feedback_uses_resume_as_context_without_crediting_omitted_details(monkeypatch):
+    seen = {}
+
+    def fake_generate(prompt, **kwargs):
+        seen["prompt"] = prompt
+        return {"structured": VALID_FEEDBACK}
+
+    monkeypatch.setattr(aivana, "generate", fake_generate)
+
+    generate_feedback(
+        company="Aivana",
+        position="Backend Engineer",
+        mode="behavioral",
+        question="Tell me about your API project.",
+        answer="I helped build the API.",
+        answer_type="text",
+        language=None,
+        resume_text="Reduced API latency by 30% using Python.",
+    )
+
+    assert "Reduced API latency by 30%" in seen["prompt"]
+    assert "score only" in seen["prompt"].lower()
+    assert "must not" in seen["prompt"].lower()
+
+
 def test_generate_feedback_parses_answer_json(monkeypatch):
     monkeypatch.setattr(
         aivana,

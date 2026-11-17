@@ -6,9 +6,9 @@ from app import interview_data, mock_data
 from app.aivana import AivanaError
 from app.db import get_db
 from app.interview_feedback_ai import generate_feedback
-from app.interview_ai import generate_questions
+from app.interview_ai import generate_questions, generate_resume_aware_questions
 from app.interview_summary_ai import generate_summary
-from app.models import InterviewSessionRecord, InterviewTurn
+from app.models import InterviewSessionContext, InterviewSessionRecord, InterviewTurn
 from app.schemas import (
     BehavioralDetailedFeedback,
     DetailedFeedbackRequest,
@@ -28,6 +28,11 @@ from app.schemas import (
 )
 
 router = APIRouter(prefix="/api/interview", tags=["interview"])
+RESUME_QUESTION_CATEGORIES = frozenset({"resume", "resume_position", "resume_technical"})
+
+
+def _public_question_type(mode: InterviewMode, category: str) -> str:
+    return "general" if category == "general" else mode
 
 
 def _raise_aivana_http_error(error: AivanaError) -> None:
@@ -40,8 +45,14 @@ def _raise_aivana_http_error(error: AivanaError) -> None:
 
 @router.post("/sessions", response_model=InterviewSessionCreated, status_code=201)
 def create_session(req: InterviewSessionCreate, db: Session = Depends(get_db)) -> InterviewSessionCreated:
+    resume_text = (req.resume_text or "").strip()
     try:
-        generated_questions = generate_questions(req.company, req.position, req.mode)
+        if resume_text:
+            generated = generate_resume_aware_questions(req.company, req.position, req.mode, resume_text)
+            question_specs = [(question.question, question.category) for question in generated]
+        else:
+            generated_questions = generate_questions(req.company, req.position, req.mode)
+            question_specs = [(question, req.mode) for question in generated_questions]
     except AivanaError as error:
         _raise_aivana_http_error(error)
 
@@ -53,12 +64,15 @@ def create_session(req: InterviewSessionCreate, db: Session = Depends(get_db)) -
             InterviewTurn(
                 question_index=index,
                 question=question,
-                question_type=req.mode,
+                question_type=category,
             )
-            for index, question in enumerate(generated_questions)
+            for index, (question, category) in enumerate(question_specs)
         ],
     )
     db.add(record)
+    db.flush()
+    if resume_text:
+        db.add(InterviewSessionContext(session_id=record.id, resume_text=resume_text))
     db.commit()
     db.refresh(record)
 
@@ -66,9 +80,9 @@ def create_session(req: InterviewSessionCreate, db: Session = Depends(get_db)) -
         InterviewQuestion(
             id=f"{req.mode}-{index + 1}",
             question=question,
-            type=req.mode,
+            type=_public_question_type(req.mode, category),
         )
-        for index, question in enumerate(generated_questions)
+        for index, (question, category) in enumerate(question_specs)
     ]
     return InterviewSessionCreated(
         session_id=record.id,
@@ -106,16 +120,26 @@ def submit_session_answer(
     if turn.feedback is not None:
         raise HTTPException(status_code=409, detail="This answer has already been evaluated")
 
+    resume_text = ""
+    if turn.question_type in RESUME_QUESTION_CATEGORIES:
+        context = db.get(InterviewSessionContext, session_id)
+        if context is None:
+            raise HTTPException(status_code=409, detail="Resume context is unavailable for this question")
+        resume_text = context.resume_text
+
     try:
-        generated = generate_feedback(
-            company=record.company,
-            position=record.position,
-            mode=record.mode,
-            question=turn.question,
-            answer=req.answer,
-            answer_type=req.answer_type,
-            language=req.language,
-        )
+        feedback_args = {
+            "company": record.company,
+            "position": record.position,
+            "mode": record.mode,
+            "question": turn.question,
+            "answer": req.answer,
+            "answer_type": req.answer_type,
+            "language": req.language,
+        }
+        if resume_text:
+            feedback_args["resume_text"] = resume_text
+        generated = generate_feedback(**feedback_args)
     except AivanaError as error:
         _raise_aivana_http_error(error)
 
@@ -138,7 +162,7 @@ def submit_session_answer(
         next_question = InterviewQuestion(
             id=f"{record.mode}-{next_turn.question_index + 1}",
             question=next_turn.question,
-            type=record.mode,
+            type=_public_question_type(record.mode, next_turn.question_type),
         )
 
     return InterviewTurnEvaluated(
@@ -151,7 +175,11 @@ def submit_session_answer(
     )
 
 
-@router.post("/sessions/{session_id}/summary", response_model=SessionInterviewSummary)
+@router.post(
+    "/sessions/{session_id}/summary",
+    response_model=SessionInterviewSummary,
+    response_model_exclude_none=True,
+)
 def create_session_summary(
     session_id: str,
     db: Session = Depends(get_db),
@@ -187,13 +215,17 @@ def create_session_summary(
         }
         for turn, feedback in zip(turns, validated_feedback, strict=True)
     ]
+    context = db.get(InterviewSessionContext, session_id)
     try:
-        generated = generate_summary(
-            company=record.company,
-            position=record.position,
-            mode=record.mode,
-            turns=summary_context,
-        )
+        summary_args = {
+            "company": record.company,
+            "position": record.position,
+            "mode": record.mode,
+            "turns": summary_context,
+        }
+        if context is not None:
+            summary_args["resume_text"] = context.resume_text
+        generated = generate_summary(**summary_args)
     except AivanaError as error:
         _raise_aivana_http_error(error)
 
@@ -213,7 +245,7 @@ def create_session_summary(
         ],
         **generated.model_dump(),
     )
-    record.summary = result.model_dump()
+    record.summary = result.model_dump(exclude_none=True)
     db.commit()
     return result
 

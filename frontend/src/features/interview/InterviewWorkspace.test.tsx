@@ -1,6 +1,8 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { MOCK_CAREER_PROFILE, PROFILE_STORAGE_KEY } from '../profile/profileStorage'
+import InterviewSummary from './InterviewSummary'
 import InterviewWorkspace from './InterviewWorkspace'
 
 const BEHAVIORAL_QUESTIONS = Array.from({ length: 5 }, (_, index) => ({
@@ -99,6 +101,7 @@ async function startInterview(mode: 'behavioral' | 'technical') {
 }
 
 afterEach(() => {
+  localStorage.clear()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
 })
@@ -111,7 +114,54 @@ describe('InterviewWorkspace', () => {
     expect(screen.getByRole('heading', { name: 'Behavioral Interview Setup' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Technical Interview' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start Interview' })).toBeDisabled()
+    expect(screen.getByText('No Resume Uploaded')).toBeInTheDocument()
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('shows current profile resume status and sends resume text only when uploaded', async () => {
+    const fetchMock = mockInterviewApi()
+    const profile = {
+      ...MOCK_CAREER_PROFILE,
+      resumeText: 'Built a Python API and reduced latency by 30%.',
+      resumeFileName: 'resume.pdf',
+    }
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profile))
+    const user = userEvent.setup()
+    const { rerender } = render(<InterviewWorkspace mode="behavioral" onTryOtherMode={vi.fn()} />)
+
+    expect(screen.getByText('Resume Uploaded')).toBeInTheDocument()
+    await user.type(screen.getByLabelText('Company'), 'Aivana')
+    await user.type(screen.getByLabelText('Position / Job Title'), 'Engineer')
+    await user.click(screen.getByRole('button', { name: 'Start Interview' }))
+
+    const createCall = fetchMock.mock.calls.find(([url]) => url === '/api/interview/sessions')
+    expect(JSON.parse(String(createCall?.[1]?.body))).toEqual({
+      company: 'Aivana',
+      position: 'Engineer',
+      mode: 'behavioral',
+      resume_text: 'Built a Python API and reduced latency by 30%.',
+    })
+
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify({ ...profile, resumeText: '', resumeFileName: '' }))
+    rerender(<InterviewWorkspace mode="behavioral" onTryOtherMode={vi.fn()} />)
+    await user.click(screen.getByRole('button', { name: 'Back to Interview Setup' }))
+    expect(screen.getByText('No Resume Uploaded')).toBeInTheDocument()
+  })
+
+  it('renders resume-based feedback only when the summary contains it', () => {
+    const { rerender } = render(
+      <InterviewSummary
+        mode="behavioral"
+        summary={{ ...SUMMARY, resume_based_feedback: ['Emphasize the 30% latency improvement.'] }}
+        onTryOtherMode={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('heading', { name: 'Resume-Based Feedback' })).toBeInTheDocument()
+    expect(screen.getByText('Emphasize the 30% latency improvement.')).toBeInTheDocument()
+
+    rerender(<InterviewSummary mode="behavioral" summary={SUMMARY} onTryOtherMode={vi.fn()} />)
+    expect(screen.queryByRole('heading', { name: 'Resume-Based Feedback' })).not.toBeInTheDocument()
   })
 
   it('shows all five questions as pending before any answer is evaluated', async () => {

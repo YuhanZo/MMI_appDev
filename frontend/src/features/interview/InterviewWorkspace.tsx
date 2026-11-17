@@ -6,6 +6,7 @@ import type {
   InterviewQuestion,
   InterviewSummary as InterviewSummaryData,
 } from '../../types'
+import { loadCareerProfile } from '../profile/profileStorage'
 import InterviewSession from './InterviewSession'
 import InterviewSetup from './InterviewSetup'
 import InterviewSummary from './InterviewSummary'
@@ -39,16 +40,19 @@ export default function InterviewWorkspace({
   const [starting, setStarting] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const lastLaunchNonce = useRef<number | null>(null)
+  const hasResume = loadCareerProfile().resumeText.trim().length > 0
 
   const beginInterview = useCallback(async (company: string, position: string) => {
     setSummary(null)
     setStarting(true)
     setSession((current) => ({ ...current, error: '' }))
     try {
+      const resumeText = loadCareerProfile().resumeText.trim()
       const result = await api.createInterviewSession({
         company: company.trim(),
         position: position.trim(),
         mode,
+        ...(resumeText ? { resume_text: resumeText } : {}),
       })
       setQuestions(result.questions)
       setSession({
@@ -218,6 +222,7 @@ export default function InterviewWorkspace({
             mode={mode}
             company={session.company}
             position={session.position}
+            hasResume={hasResume}
             starting={starting}
             onCompanyChange={(company) => updateSession({ company, error: '' })}
             onPositionChange={(position) => updateSession({ position, error: '' })}

@@ -132,6 +132,7 @@ export interface CreateInterviewSessionRequest {
   company: string
   position: string
   mode: InterviewMode
+  resume_text?: string
 }
 
 export interface CreatedInterviewSession {
@@ -226,4 +227,5 @@ export interface InterviewSummary {
     feedback: string
   }>
   suggested_next_steps: string[]
+  resume_based_feedback?: string[]
 }

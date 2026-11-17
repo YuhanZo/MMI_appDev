@@ -72,6 +72,27 @@ class InterviewSessionRecord(Base):
         cascade="all, delete-orphan",
         order_by="InterviewTurn.question_index",
     )
+    context: Mapped["InterviewSessionContext | None"] = relationship(
+        back_populates="session",
+        cascade="all, delete-orphan",
+        uselist=False,
+        single_parent=True,
+    )
+
+
+class InterviewSessionContext(Base):
+    """Immutable resume snapshot for one resume-aware interview session."""
+
+    __tablename__ = "interview_session_contexts"
+
+    session_id: Mapped[str] = mapped_column(
+        ForeignKey("interview_sessions.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    resume_text: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+    session: Mapped[InterviewSessionRecord] = relationship(back_populates="context")
 
 
 class InterviewTurn(Base):

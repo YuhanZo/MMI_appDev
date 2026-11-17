@@ -71,6 +71,39 @@ def test_generate_summary_normalizes_compact_aivana_field_names(monkeypatch):
     assert result.model_dump() == VALID_SUMMARY
 
 
+def test_generate_resume_aware_summary_adds_limited_resume_feedback(monkeypatch):
+    seen = {}
+    payload = {
+        **VALID_SUMMARY,
+        "resume_based_feedback": [
+            "The API project was explained clearly.",
+            "Emphasize the measured latency improvement.",
+        ],
+    }
+
+    def fake_generate(prompt, **kwargs):
+        seen["prompt"] = prompt
+        return {"structured": payload}
+
+    monkeypatch.setattr(aivana, "generate", fake_generate)
+
+    result = generate_summary(
+        "Aivana",
+        "Backend Engineer",
+        "behavioral",
+        TURNS,
+        resume_text="Built a Python API and reduced latency by 30%.",
+    )
+
+    assert result.resume_based_feedback == payload["resume_based_feedback"]
+    assert "reduced latency by 30%" in seen["prompt"]
+    assert "only" in seen["prompt"].lower()
+    assert "job fit" in seen["prompt"].lower()
+    assert "ordinary summary fields" in seen["prompt"].lower()
+    assert "turns only" in seen["prompt"].lower()
+    assert "solely" in seen["prompt"].lower()
+
+
 @pytest.mark.parametrize(
     "payload",
     [
