@@ -197,7 +197,7 @@ the audio to Google for recognition; nothing goes through our backend.
         │                      fit analysis, saved jobs (kept in the browser)
         ├── features/interview setup with resume status, five-question session,
         │                      feedback, completion and summary components
-        ├── features/profile   editable profile page and resume upload, saved in the browser
+        ├── features/profile   profile overview (practice calendar, streaks, scores) and the editable profile with resume upload, saved in the browser
         ├── features/benchmark Aivana vs a general model: anonymous A/B answers, votes
         │                      (scoreboard saved in the browser)
         ├── features/scenarios Scenario Test dashboard: 8 questions, Aivana's answers,
@@ -250,7 +250,7 @@ drift apart.
 
 ```bash
 cd backend && .venv/bin/pytest          # 168 tests
-cd frontend && npm test                 # 110 tests
+cd frontend && npm test                 # 119 tests
 ```
 
 On Windows (PowerShell): `cd backend; .venv\Scripts\python.exe -m pytest -q`

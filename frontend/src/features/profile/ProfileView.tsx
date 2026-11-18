@@ -1,5 +1,6 @@
 import { useState, type KeyboardEvent } from 'react'
 import * as api from '../../api'
+import { Icon } from '../../icons'
 import EditableCard from './EditableCard'
 import IdentityCard from './IdentityCard'
 import type { SectionId } from './profileCompleteness'
@@ -33,7 +34,7 @@ function Detail({ label, value }: { label: string; value: string }) {
 // how complete the profile is) and one card per section on the right. Each card is
 // edited on its own; only one card is open for editing at a time, so nothing
 // unsaved is lost by opening another.
-export default function ProfileView() {
+export default function ProfileView({ onBack }: { onBack?: () => void } = {}) {
   const [profile, setProfile] = useState(loadCareerProfile)
   const [draft, setDraft] = useState<CareerProfile>(() => cloneProfile(profile))
   const [editing, setEditing] = useState<SectionId | null>(null)
@@ -141,6 +142,12 @@ export default function ProfileView() {
   return (
     <div className="career-profile-page">
       <div className="career-profile-heading">
+        {onBack && (
+          <button type="button" className="career-profile-back" onClick={onBack}>
+            <Icon name="back" size={18} />
+            Back to overview
+          </button>
+        )}
         <h1>My Profile</h1>
       </div>
 

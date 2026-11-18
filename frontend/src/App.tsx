@@ -7,7 +7,7 @@ import InterviewWorkspace, {
 } from './features/interview/InterviewWorkspace'
 import JobSearchView from './features/jobs/JobSearchView'
 import { loadSavedJobs, saveSavedJobs, toggleSaved } from './features/jobs/savedJobs'
-import ProfileView from './features/profile/ProfileView'
+import ProfilePage from './features/profile/ProfilePage'
 import ScenarioTestView from './features/scenarios/ScenarioTestView'
 import { Icon, type IconName } from './icons'
 import TypingTitle from './TypingTitle'
@@ -190,6 +190,7 @@ function useTheme() {
 
 export default function App() {
   const [view, setView] = useState<View>('home')
+  const [profileVisit, setProfileVisit] = useState(0) // bumped each time My Profile opens, so it starts at the overview with fresh data
   // Saved jobs live here so the account menu can count them and open the list.
   const [savedJobs, setSavedJobs] = useState<Job[]>(loadSavedJobs)
   const [showSaved, setShowSaved] = useState(false)
@@ -266,7 +267,10 @@ export default function App() {
             </button>
 
             <ProfileMenu
-              onOpenProfile={() => setView('profile')}
+              onOpenProfile={() => {
+                setProfileVisit((n) => n + 1)
+                setView('profile')
+              }}
               savedCount={savedJobs.length}
               onOpenSaved={() => {
                 setShowSaved(true)
@@ -340,7 +344,7 @@ export default function App() {
           <ScenarioTestView active={view === 'scenarios'} />
         </section>
         <section hidden={view !== 'profile'}>
-          <ProfileView />
+          {view === 'profile' && <ProfilePage key={profileVisit} />}
         </section>
       </main>
     </div>

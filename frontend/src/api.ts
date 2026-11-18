@@ -12,6 +12,7 @@ import type {
   InterviewTurnEvaluated,
   InterviewMode,
   InterviewQuestion,
+  InterviewHistoryItem,
   InterviewStats,
   InterviewSummary,
   Job,
@@ -106,6 +107,10 @@ export const getFeedback = (answer: InterviewAnswer) =>
 
 export const getDetailedFeedback = (answer: DetailedFeedbackRequest) =>
   post<DetailedInterviewFeedback>('/api/interview/detailed-feedback', answer)
+
+/** Every practice interview started since `since` (default: all of them), oldest first. */
+export const getInterviewHistory = (since = new Date(0)) =>
+  request<InterviewHistoryItem[]>(`/api/interview/history?since=${encodeURIComponent(since.toISOString())}`)
 
 export const getInterviewStats = (mode: InterviewMode, since: Date) =>
   request<InterviewStats>(

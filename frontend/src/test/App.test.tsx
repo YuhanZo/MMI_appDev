@@ -902,18 +902,23 @@ describe('App', () => {
     expect(screen.getByRole('region', { name: 'Technical Interview Setup' })).toBeVisible()
   })
 
-  it('opens the enhanced profile from the existing account menu', async () => {
-    mockApi()
+  it('opens the profile overview from the account menu, and the full profile from there', async () => {
+    mockApi({ '/api/interview/history?since=1970-01-01T00%3A00%3A00.000Z': [] })
     const user = userEvent.setup()
     render(<App />)
 
     await user.click(screen.getByRole('button', { name: 'Account menu' }))
     await user.click(screen.getByRole('menuitem', { name: 'My Profile' }))
+    expect(await screen.findByRole('heading', { name: /0 practice sessions in/ })).toBeInTheDocument()
 
+    await user.click(screen.getByRole('button', { name: 'Edit Profile' }))
     expect(screen.getByRole('heading', { name: 'About Me' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Skills & Experience' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Career Preferences' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Career Priorities' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Edit About Me' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Back to overview' }))
+    expect(screen.getByRole('button', { name: 'Edit Profile' })).toBeInTheDocument()
   })
 })

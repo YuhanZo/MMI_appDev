@@ -44,6 +44,9 @@ const STROKES = {
   flask: 'M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.7 3h10.6a2 2 0 0 0 1.7-3l-5-9V3M7.5 15h9',
   clock: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2',
   arrow: 'M5 12h14M13 6l6 6-6 6',
+  flame: 'M12 21c3.9 0 6.5-2.6 6.5-6.3 0-3.6-2.4-5.6-3.9-8.2-.4 2-1.4 3.2-2.6 3.7.2-2.8-.9-5.6-3.5-7.2.3 3.5-4 5.8-4 11.7C4.5 18.4 8 21 12 21z',
+  trophy: 'M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7M10 17h4',
+  pulse: 'M3 12h4l2.5-6 5 12 2.5-6h4',
 } as const
 
 export type IconName = keyof typeof PATHS | keyof typeof STROKES
