@@ -683,3 +683,30 @@ def test_stats_treat_a_time_without_a_zone_as_utc(client, monkeypatch):
 def test_stats_reject_a_bad_mode_or_time(client):
     assert stats(client, "general", "2020-01-01T00:00:00Z").status_code == 422
     assert stats(client, "behavioral", "last week").status_code == 422
+
+
+def history(client, since):
+    return client.get("/api/interview/history", params={"since": since})
+
+
+def test_history_lists_each_started_interview_with_its_progress_and_scores(client, monkeypatch):
+    complete_generated_session(client, monkeypatch, scores=(4, 5, 6, 7, 8))
+    create_generated_session(client, monkeypatch, mode="technical")  # started, nothing answered
+
+    res = history(client, "2020-01-01T00:00:00-05:00")
+    assert res.status_code == 200
+    first, second = res.json()
+    assert (first["mode"], first["answered"], first["completed"], first["scores"]) == ("behavioral", 5, True, [4, 5, 6, 7, 8])
+    assert (second["mode"], second["answered"], second["completed"], second["scores"]) == ("technical", 0, False, [])
+    assert first["started_at"] <= second["started_at"]
+    assert first["started_at"].endswith(("Z", "+00:00"))
+
+
+def test_history_leaves_out_interviews_started_before_since(client, monkeypatch):
+    create_generated_session(client, monkeypatch)
+    assert history(client, "2999-01-01T00:00:00Z").json() == []
+    assert len(history(client, "2020-01-01T00:00:00").json()) == 1  # no zone: UTC
+
+
+def test_history_rejects_a_bad_time(client):
+    assert history(client, "last year").status_code == 422

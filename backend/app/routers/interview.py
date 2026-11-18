@@ -19,6 +19,7 @@ from app.schemas import (
     InterviewMode,
     InterviewQuestion,
     InterviewFeedbackDetail,
+    InterviewHistoryItem,
     InterviewSessionCreate,
     InterviewSessionCreated,
     InterviewStats,
@@ -200,6 +201,35 @@ def interview_stats(
     # SQLite gives naive datetimes back; they're stored in UTC.
     completed = sum(1 for at in finished if (at if at.tzinfo else at.replace(tzinfo=timezone.utc)) >= since_utc)
     return InterviewStats(mode=mode, completed=completed, total=len(finished))
+
+
+def _utc(at: datetime) -> datetime:
+    # SQLite gives naive datetimes back; they're stored in UTC.
+    return at if at.tzinfo else at.replace(tzinfo=timezone.utc)
+
+
+@router.get("/history", response_model=list[InterviewHistoryItem])
+def interview_history(since: datetime, db: Session = Depends(get_db)) -> list[InterviewHistoryItem]:
+    """Every practice interview started since `since`, oldest first: when it started, how
+    far it got and its scores. The profile turns these into days in the user's own time
+    zone, so the server doesn't group by day."""
+    since_utc = since.astimezone(timezone.utc) if since.tzinfo else _utc(since)
+    records = db.scalars(select(InterviewSessionRecord).order_by(InterviewSessionRecord.created_at))
+    items = []
+    for record in records:
+        if _utc(record.created_at) < since_utc:
+            continue
+        answered = [turn for turn in record.turns if turn.answer is not None]
+        items.append(
+            InterviewHistoryItem(
+                started_at=_utc(record.created_at),
+                mode=record.mode,
+                answered=len(answered),
+                completed=record.current_question_index >= QUESTIONS_PER_SESSION,
+                scores=[turn.score for turn in answered if turn.score is not None],
+            )
+        )
+    return items
 
 
 @router.post(

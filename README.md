@@ -235,6 +235,7 @@ drift apart.
 | POST | `/api/interview/sessions/{session_id}/answers` | evaluates the current answer with Aivana, persists its 0–10 score and structured feedback, then advances the persisted question index; resume context is included only for resume-related questions |
 | POST | `/api/interview/sessions/{session_id}/summary` | generates and caches one concise Aivana summary after all five answers; scores and question results come from SQLite, with optional resume-based feedback for resume-aware sessions |
 | GET | `/api/interview/stats?mode=behavioral\|technical&since=<ISO time>` | `InterviewStats {mode, completed, total}`: interviews of that mode with all five questions answered since `since`, and ever (the setup page sends the start of the user's week, Monday 00:00 local time) |
+| GET | `/api/interview/history?since=<ISO time>` | `InterviewHistoryItem[]` `{started_at, mode, answered, completed, scores}`: every practice interview started since `since`, oldest first (the profile overview's activity chart, streaks and scores) |
 | POST | `/api/profile/resume` | multipart `file` (PDF, Word .docx or .txt, up to 5 MB) → `ResumeUploadResult {filename, text, truncated}`: the resume's plain text, at most 15,000 characters; the upload endpoint does not retain the file or text (starting a resume-aware interview separately stores a session snapshot); `413` over 5 MB, `422 {detail: {message, code: bad_resume}}` for an unreadable or unsupported file |
 | GET | `/api/interview/questions?mode=behavioral\|technical` | five prepared questions for the selected mode |
 | POST | `/api/interview/feedback` | `InterviewFeedback` (mocked) |
@@ -248,7 +249,7 @@ drift apart.
 ## Tests
 
 ```bash
-cd backend && .venv/bin/pytest          # 165 tests
+cd backend && .venv/bin/pytest          # 168 tests
 cd frontend && npm test                 # 110 tests
 ```
 

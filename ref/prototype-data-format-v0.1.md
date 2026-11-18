@@ -460,6 +460,26 @@ interviews of that mode with all five questions answered since `since`, and ever
 | `completed` | integer (since `since`) |
 | `total` | integer (ever) |
 
+## 11c. InterviewHistoryItem
+
+`GET /api/interview/history?since=2025-11-16T05:00:00.000Z` returns a list of these,
+oldest first: every practice interview started since `since`. The profile overview
+groups them into days in the user's own time zone.
+
+```json
+{
+  "started_at": "2026-11-12T15:04:05.123456Z",
+  "mode": "behavioral",
+  "answered": 5,
+  "completed": true,
+  "scores": [6, 7, 5, 8, 7]
+}
+```
+
+- `started_at`: UTC.
+- `answered`: questions answered so far, 0-5; `completed` is true once all five are.
+- `scores`: the answered questions' scores (1-10), in question order.
+
 ---
 
 ## 12. BenchmarkResult

@@ -1,5 +1,6 @@
 """Request/response models -- see ref/prototype-data-format-v0.1.md."""
 
+from datetime import datetime
 from typing import Annotated, Literal
 
 from pydantic import (
@@ -204,6 +205,16 @@ class InterviewStats(BaseModel):
     mode: InterviewMode
     completed: int  # interviews with all five questions answered since the requested time
     total: int  # ... ever
+
+
+class InterviewHistoryItem(BaseModel):
+    """One practice interview, for the profile's activity chart, streaks and scores."""
+
+    started_at: datetime  # UTC
+    mode: InterviewMode
+    answered: int  # questions answered so far, 0-5
+    completed: bool  # all five answered
+    scores: list[int]  # the answered questions' scores, 1-10, in question order
 
 
 class InterviewSessionCreated(BaseModel):

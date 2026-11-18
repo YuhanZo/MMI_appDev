@@ -151,6 +151,15 @@ export interface InterviewStats {
   total: number // ... ever
 }
 
+/** One practice interview, for the profile's activity chart, streaks and scores. */
+export interface InterviewHistoryItem {
+  started_at: string // ISO time, UTC
+  mode: InterviewMode
+  answered: number // questions answered so far, 0-5
+  completed: boolean // all five answered
+  scores: number[] // the answered questions' scores, 1-10, in question order
+}
+
 export interface CreatedInterviewSession {
   session_id: string
   company: string
